@@ -43,6 +43,22 @@ proptest! {
     }
 
     #[test]
+    fn pt_utf8_decode_random_bytes(ref data in vec(0u8..=255, 0..512)) {
+        // Attempt to decode, but probably fail.  The important thing is that
+        // it should never panic, only return errors.
+        let mut buf = vec![0u8; 4096];
+        let _ = decode_to_str(Encoding::Utf8, data, &mut buf);
+    }
+
+    #[test]
+    fn pt_utf8_encode_random_text(ref text in "\\PC*\\PC*\\PC*") {
+        // Attempt to encode.  Should always succeed, but the important thing
+        // is that it should never panic.
+        let mut buf = vec![0u8; 4096];
+        let _ = encode_from_str(Encoding::Utf8, text, &mut buf);
+    }
+
+    #[test]
     fn pt_utf16be_roundtrip(ref text in "\\PC*\\PC*\\PC*") {
         let mut buf = [0u8; 32];
         let mut utf16: Vec<u8> = Vec::new();
@@ -71,6 +87,22 @@ proptest! {
         }
 
         assert_eq!(&text[..], &utf8[..]);
+    }
+
+    #[test]
+    fn pt_utf16be_decode_random_bytes(ref data in vec(0u8..=255, 0..512)) {
+        // Attempt to decode, but probably fail.  The important thing is that
+        // it should never panic, only return errors.
+        let mut buf = vec![0u8; 4096];
+        let _ = decode_to_str(Encoding::Utf16BE, data, &mut buf);
+    }
+
+    #[test]
+    fn pt_utf16be_encode_random_text(ref text in "\\PC*\\PC*\\PC*") {
+        // Attempt to encode.  Should always succeed, but the important thing
+        // is that it should never panic.
+        let mut buf = vec![0u8; 4096];
+        let _ = encode_from_str(Encoding::Utf16BE, text, &mut buf);
     }
 
     #[test]
@@ -105,6 +137,22 @@ proptest! {
     }
 
     #[test]
+    fn pt_utf16le_decode_random_bytes(ref data in vec(0u8..=255, 0..512)) {
+        // Attempt to decode, but probably fail.  The important thing is that
+        // it should never panic, only return errors.
+        let mut buf = vec![0u8; 4096];
+        let _ = decode_to_str(Encoding::Utf16LE, data, &mut buf);
+    }
+
+    #[test]
+    fn pt_utf16le_encode_random_text(ref text in "\\PC*\\PC*\\PC*") {
+        // Attempt to encode.  Should always succeed, but the important thing
+        // is that it should never panic.
+        let mut buf = vec![0u8; 4096];
+        let _ = encode_from_str(Encoding::Utf16LE, text, &mut buf);
+    }
+
+    #[test]
     fn pt_utf32be_roundtrip(ref text in "\\PC*\\PC*\\PC*") {
         let mut buf = [0u8; 32];
         let mut utf32: Vec<u8> = Vec::new();
@@ -133,6 +181,22 @@ proptest! {
         }
 
         assert_eq!(&text[..], &utf8[..]);
+    }
+
+    #[test]
+    fn pt_utf32be_decode_random_bytes(ref data in vec(0u8..=255, 0..512)) {
+        // Attempt to decode, but probably fail.  The important thing is that
+        // it should never panic, only return errors.
+        let mut buf = vec![0u8; 4096];
+        let _ = decode_to_str(Encoding::Utf32BE, data, &mut buf);
+    }
+
+    #[test]
+    fn pt_utf32be_encode_random_text(ref text in "\\PC*\\PC*\\PC*") {
+        // Attempt to encode.  Should always succeed, but the important thing
+        // is that it should never panic.
+        let mut buf = vec![0u8; 4096];
+        let _ = encode_from_str(Encoding::Utf32BE, text, &mut buf);
     }
 
     #[test]
@@ -167,6 +231,22 @@ proptest! {
     }
 
     #[test]
+    fn pt_utf32le_decode_random_bytes(ref data in vec(0u8..=255, 0..512)) {
+        // Attempt to decode, but probably fail.  The important thing is that
+        // it should never panic, only return errors.
+        let mut buf = vec![0u8; 4096];
+        let _ = decode_to_str(Encoding::Utf32LE, data, &mut buf);
+    }
+
+    #[test]
+    fn pt_utf32le_encode_random_text(ref text in "\\PC*\\PC*\\PC*") {
+        // Attempt to encode.  Should always succeed, but the important thing
+        // is that it should never panic.
+        let mut buf = vec![0u8; 4096];
+        let _ = encode_from_str(Encoding::Utf32LE, text, &mut buf);
+    }
+
+    #[test]
     fn pt_latin1_roundtrip(ref data in vec(0u8..=255, 0..1000)) {
         let mut buf = [0u8; 32];
         let mut utf8 = String::new();
@@ -195,6 +275,22 @@ proptest! {
         }
 
         assert_eq!(&data[..], &latin1[..]);
+    }
+
+    #[test]
+    fn pt_latin1_decode_random_bytes(ref data in vec(0u8..=255, 0..512)) {
+        // Attempt to decode.  Should always succeed with latin1, but the
+        // important thing here is that it doesn't panic.
+        let mut buf = vec![0u8; 4096];
+        let _ = decode_to_str(Encoding::Latin1, data, &mut buf);
+    }
+
+    #[test]
+    fn pt_latin1_encode_random_text(ref text in "\\PC*\\PC*\\PC*") {
+        // Attempt to encode, but probably fail.  The important thing is that
+        // it should never panic, only return errors.
+        let mut buf = vec![0u8; 4096];
+        let _ = encode_from_str(Encoding::Latin1, text, &mut buf);
     }
 
     // The iso-8859-7 tests are representative of all single-byte encodings
@@ -235,5 +331,21 @@ proptest! {
         }
 
         assert_eq!(&data[..], &iso8859_7[..]);
+    }
+
+    #[test]
+    fn pt_iso_8859_7_decode_random_bytes(ref data in vec(0u8..=255, 0..512)) {
+        // Attempt to decode, but probably fail.  The important thing is that
+        // it should never panic, only return errors.
+        let mut buf = vec![0u8; 4096];
+        let _ = decode_to_str(Encoding::ISO8859_7, data, &mut buf);
+    }
+
+    #[test]
+    fn pt_iso_8859_7_encode_random_text(ref text in "\\PC*\\PC*\\PC*") {
+        // Attempt to encode, but probably fail.  The important thing is that
+        // it should never panic, only return errors.
+        let mut buf = vec![0u8; 4096];
+        let _ = encode_from_str(Encoding::ISO8859_7, text, &mut buf);
     }
 }
