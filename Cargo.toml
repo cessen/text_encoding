@@ -2,7 +2,11 @@
 name = "text_encoding"
 version = "0.1.0"
 authors = ["Nathan Vegdahl <cessen@cessen.com>"]
+description = "Text encoding conversion"
+repository = "https://github.com/cessen/text_encoding"
 license = "MIT"
+keywords = ["text", "encoding", "decoding"]
+categories = ["text-processing"]
 build = "build.rs"
 
 [lib]
