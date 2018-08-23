@@ -41,8 +41,16 @@ fn main() {
             File::create(&Path::new(&out_dir).join("iso-8859-8.rs")).unwrap(),
         ).unwrap();
         generate_single_byte_encoding_from_index(
+            File::open("encoding_tables/index-iso-8859-9.txt").unwrap(),
+            File::create(&Path::new(&out_dir).join("iso-8859-9.rs")).unwrap(),
+        ).unwrap();
+        generate_single_byte_encoding_from_index(
             File::open("encoding_tables/index-iso-8859-10.txt").unwrap(),
             File::create(&Path::new(&out_dir).join("iso-8859-10.rs")).unwrap(),
+        ).unwrap();
+        generate_single_byte_encoding_from_index(
+            File::open("encoding_tables/index-tis-620.txt").unwrap(),
+            File::create(&Path::new(&out_dir).join("tis-620.rs")).unwrap(),
         ).unwrap();
         generate_single_byte_encoding_from_index(
             File::open("encoding_tables/index-iso-8859-13.txt").unwrap(),
