@@ -19,5 +19,5 @@ Contributions are absolutely welcome!  Especially welcome are:
 * Support for additional encodings.
 
 Unless you explicitly state otherwise, any contribution intentionally submitted
-for inclusion in Ropey by you will be licensed as above, without any additional
+for inclusion in TextEncoding by you will be licensed as above, without any additional
 terms or conditions.
