@@ -3,6 +3,7 @@
 //! A library for incrementally encoding/decoding between utf8 and various
 //! text encodings.
 
+mod ascii;
 mod iso_8859_1;
 mod single_byte;
 mod utf16_be;
@@ -32,24 +33,25 @@ pub fn encode_from_str<'a>(
         Encoding::Utf16LE => utf16_le::encode_from_str(input, output),
         Encoding::Utf32BE => utf32_be::encode_from_str(input, output),
         Encoding::Utf32LE => utf32_le::encode_from_str(input, output),
-        Encoding::IBM866 => ibm866::encode_from_str(input, output),
-        Encoding::ISO8859_1 => iso_8859_1::encode_from_str(input, output),
-        Encoding::ISO8859_2 => iso_8859_2::encode_from_str(input, output),
-        Encoding::ISO8859_3 => iso_8859_3::encode_from_str(input, output),
-        Encoding::ISO8859_4 => iso_8859_4::encode_from_str(input, output),
-        Encoding::ISO8859_5 => iso_8859_5::encode_from_str(input, output),
-        Encoding::ISO8859_6 => iso_8859_6::encode_from_str(input, output),
-        Encoding::ISO8859_7 => iso_8859_7::encode_from_str(input, output),
-        Encoding::ISO8859_8 => iso_8859_8::encode_from_str(input, output),
-        Encoding::ISO8859_9 => iso_8859_9::encode_from_str(input, output),
-        Encoding::ISO8859_10 => iso_8859_10::encode_from_str(input, output),
-        Encoding::TIS620 => tis_620::encode_from_str(input, output),
-        Encoding::ISO8859_13 => iso_8859_13::encode_from_str(input, output),
-        Encoding::ISO8859_14 => iso_8859_14::encode_from_str(input, output),
-        Encoding::ISO8859_15 => iso_8859_15::encode_from_str(input, output),
-        Encoding::ISO8859_16 => iso_8859_16::encode_from_str(input, output),
-        Encoding::KOI8R => koi8_r::encode_from_str(input, output),
-        Encoding::KOI8U => koi8_u::encode_from_str(input, output),
+        Encoding::Ascii => ascii::encode_from_str(input, output),
+        Encoding::Ibm866 => ibm866::encode_from_str(input, output),
+        Encoding::Iso8859_1 => iso_8859_1::encode_from_str(input, output),
+        Encoding::Iso8859_2 => iso_8859_2::encode_from_str(input, output),
+        Encoding::Iso8859_3 => iso_8859_3::encode_from_str(input, output),
+        Encoding::Iso8859_4 => iso_8859_4::encode_from_str(input, output),
+        Encoding::Iso8859_5 => iso_8859_5::encode_from_str(input, output),
+        Encoding::Iso8859_6 => iso_8859_6::encode_from_str(input, output),
+        Encoding::Iso8859_7 => iso_8859_7::encode_from_str(input, output),
+        Encoding::Iso8859_8 => iso_8859_8::encode_from_str(input, output),
+        Encoding::Iso8859_9 => iso_8859_9::encode_from_str(input, output),
+        Encoding::Iso8859_10 => iso_8859_10::encode_from_str(input, output),
+        Encoding::Tis620 => tis_620::encode_from_str(input, output),
+        Encoding::Iso8859_13 => iso_8859_13::encode_from_str(input, output),
+        Encoding::Iso8859_14 => iso_8859_14::encode_from_str(input, output),
+        Encoding::Iso8859_15 => iso_8859_15::encode_from_str(input, output),
+        Encoding::Iso8859_16 => iso_8859_16::encode_from_str(input, output),
+        Encoding::Koi8R => koi8_r::encode_from_str(input, output),
+        Encoding::Koi8U => koi8_u::encode_from_str(input, output),
         Encoding::Macintosh => macintosh::encode_from_str(input, output),
         Encoding::Windows874 => windows_874::encode_from_str(input, output),
         Encoding::Windows1250 => windows_1250::encode_from_str(input, output),
@@ -77,24 +79,25 @@ pub fn decode_to_str<'a>(
         Encoding::Utf16LE => utf16_le::decode_to_str(input, output),
         Encoding::Utf32BE => utf32_be::decode_to_str(input, output),
         Encoding::Utf32LE => utf32_le::decode_to_str(input, output),
-        Encoding::IBM866 => ibm866::decode_to_str(input, output),
-        Encoding::ISO8859_1 => iso_8859_1::decode_to_str(input, output),
-        Encoding::ISO8859_2 => iso_8859_2::decode_to_str(input, output),
-        Encoding::ISO8859_3 => iso_8859_3::decode_to_str(input, output),
-        Encoding::ISO8859_4 => iso_8859_4::decode_to_str(input, output),
-        Encoding::ISO8859_5 => iso_8859_5::decode_to_str(input, output),
-        Encoding::ISO8859_6 => iso_8859_6::decode_to_str(input, output),
-        Encoding::ISO8859_7 => iso_8859_7::decode_to_str(input, output),
-        Encoding::ISO8859_8 => iso_8859_8::decode_to_str(input, output),
-        Encoding::ISO8859_9 => iso_8859_9::decode_to_str(input, output),
-        Encoding::ISO8859_10 => iso_8859_10::decode_to_str(input, output),
-        Encoding::TIS620 => tis_620::decode_to_str(input, output),
-        Encoding::ISO8859_13 => iso_8859_13::decode_to_str(input, output),
-        Encoding::ISO8859_14 => iso_8859_14::decode_to_str(input, output),
-        Encoding::ISO8859_15 => iso_8859_15::decode_to_str(input, output),
-        Encoding::ISO8859_16 => iso_8859_16::decode_to_str(input, output),
-        Encoding::KOI8R => koi8_r::decode_to_str(input, output),
-        Encoding::KOI8U => koi8_u::decode_to_str(input, output),
+        Encoding::Ascii => ascii::decode_to_str(input, output),
+        Encoding::Ibm866 => ibm866::decode_to_str(input, output),
+        Encoding::Iso8859_1 => iso_8859_1::decode_to_str(input, output),
+        Encoding::Iso8859_2 => iso_8859_2::decode_to_str(input, output),
+        Encoding::Iso8859_3 => iso_8859_3::decode_to_str(input, output),
+        Encoding::Iso8859_4 => iso_8859_4::decode_to_str(input, output),
+        Encoding::Iso8859_5 => iso_8859_5::decode_to_str(input, output),
+        Encoding::Iso8859_6 => iso_8859_6::decode_to_str(input, output),
+        Encoding::Iso8859_7 => iso_8859_7::decode_to_str(input, output),
+        Encoding::Iso8859_8 => iso_8859_8::decode_to_str(input, output),
+        Encoding::Iso8859_9 => iso_8859_9::decode_to_str(input, output),
+        Encoding::Iso8859_10 => iso_8859_10::decode_to_str(input, output),
+        Encoding::Tis620 => tis_620::decode_to_str(input, output),
+        Encoding::Iso8859_13 => iso_8859_13::decode_to_str(input, output),
+        Encoding::Iso8859_14 => iso_8859_14::decode_to_str(input, output),
+        Encoding::Iso8859_15 => iso_8859_15::decode_to_str(input, output),
+        Encoding::Iso8859_16 => iso_8859_16::decode_to_str(input, output),
+        Encoding::Koi8R => koi8_r::decode_to_str(input, output),
+        Encoding::Koi8U => koi8_u::decode_to_str(input, output),
         Encoding::Macintosh => macintosh::decode_to_str(input, output),
         Encoding::Windows874 => windows_874::decode_to_str(input, output),
         Encoding::Windows1250 => windows_1250::decode_to_str(input, output),
@@ -121,24 +124,25 @@ pub enum Encoding {
     // ShiftJIS,
     // EUC_JP,
     // Big5,
-    IBM866,      // IBM 866
-    ISO8859_1,   // ISO/IEC 8859-1, Latin1
-    ISO8859_2,   // ISO/IEC 8859-2, Latin2
-    ISO8859_3,   // ISO/IEC 8859-3, Latin3
-    ISO8859_4,   // ISO/IEC 8859-4, Latin4
-    ISO8859_5,   // ISO/IEC 8859-5
-    ISO8859_6,   // ISO/IEC 8859-6
-    ISO8859_7,   // ISO/IEC 8859-7
-    ISO8859_8,   // ISO/IEC 8859-8
-    ISO8859_9,   // ISO/IEC 8859-9
-    ISO8859_10,  // ISO/IEC 8859-10
-    TIS620,      // TIS-620, also called ISO/IEC 8859-11
-    ISO8859_13,  // ISO/IEC 8859-13
-    ISO8859_14,  // ISO/IEC 8859-14
-    ISO8859_15,  // ISO/IEC 8859-15
-    ISO8859_16,  // ISO/IEC 8859-16
-    KOI8R,       // KOI8-R
-    KOI8U,       // KOI8-U
+    Ascii,       // US Ascii
+    Ibm866,      // IBM 866
+    Iso8859_1,   // ISO/IEC 8859-1, Latin1
+    Iso8859_2,   // ISO/IEC 8859-2, Latin2
+    Iso8859_3,   // ISO/IEC 8859-3, Latin3
+    Iso8859_4,   // ISO/IEC 8859-4, Latin4
+    Iso8859_5,   // ISO/IEC 8859-5
+    Iso8859_6,   // ISO/IEC 8859-6
+    Iso8859_7,   // ISO/IEC 8859-7
+    Iso8859_8,   // ISO/IEC 8859-8
+    Iso8859_9,   // ISO/IEC 8859-9
+    Iso8859_10,  // ISO/IEC 8859-10
+    Tis620,      // TIS-620, also called ISO/IEC 8859-11
+    Iso8859_13,  // ISO/IEC 8859-13
+    Iso8859_14,  // ISO/IEC 8859-14
+    Iso8859_15,  // ISO/IEC 8859-15
+    Iso8859_16,  // ISO/IEC 8859-16
+    Koi8R,       // KOI8-R
+    Koi8U,       // KOI8-U
     Macintosh,   // Macintosh
     Windows874,  // Windows code page 874
     Windows1250, // Windows code page 1250
