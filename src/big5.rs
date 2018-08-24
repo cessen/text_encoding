@@ -1,4 +1,4 @@
-//! Encoding/decoding functions for BIG5.
+//! Encoding/decoding functions for the WHATWG variant of BIG5.
 
 use core;
 use {DecodeError, DecodeResult, EncodeError, EncodeResult};
@@ -19,8 +19,8 @@ pub fn encode_from_str<'a>(input: &str, output: &'a mut [u8]) -> EncodeResult<'a
             output[output_i] = code as u8;
             output_i += 1;
             input_i = offset + 1;
-        }
-        if let Ok(big5_ptr) = ENCODE_TABLE.binary_search_by_key(&c, |x| x.0) {
+        } else if let Ok(ptr_i) = ENCODE_TABLE.binary_search_by_key(&c, |x| x.0) {
+            let big5_ptr = ENCODE_TABLE[ptr_i].1;
             if (output_i + 1) < output.len() {
                 let byte_1 = (big5_ptr / 157 + 0x81) as u8;
                 let byte_2 = {
@@ -78,6 +78,13 @@ pub fn decode_to_str<'a>(input: &[u8], output: &'a mut [u8]) -> DecodeResult<'a>
         } else {
             // Decode to scalar value.
             let code = if let Some(&byte_2) = itr.next() {
+                if byte_2 < 0x40 || byte_2 > 0xFE || (byte_2 > 0x7E && byte_2 < 0xA1) {
+                    // Invalid trailing byte.
+                    return Err(DecodeError {
+                        error_range: (input_i, input_i + if byte_2 <= 127 { 1 } else { 2 }),
+                        output_bytes_written: output_i,
+                    });
+                }
                 let big5_ptr = {
                     let lead = (byte_1 as usize - 0x81) * 157;
                     let trail = if byte_2 < 0x7f {

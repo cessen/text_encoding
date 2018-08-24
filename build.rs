@@ -194,7 +194,7 @@ const ENCODE_TABLE: [(char, u32); {}] = [
         if ii % 4 == 0 && ii != 0 {
             out_file.write_all("\n".as_bytes())?;
         }
-        out_file.write_all(format!("('\\u{{{:04X}}}', 0x{:02X}), ", *c as u32, i).as_bytes())?;
+        out_file.write_all(format!("('\\u{{{:X}}}', 0x{:X}), ", *c as u32, i).as_bytes())?;
     }
 
     out_file.write_all(
@@ -219,7 +219,7 @@ const DECODE_TABLE: [char; {}] = [
         if i % 8 == 0 && i != 0 {
             out_file.write_all("\n".as_bytes())?;
         }
-        out_file.write_all(format!("'\\u{{{:04X}}}', ", *c as u32).as_bytes())?;
+        out_file.write_all(format!("'\\u{{{:X}}}', ", *c as u32).as_bytes())?;
     }
 
     out_file.write_all(
