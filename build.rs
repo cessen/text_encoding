@@ -6,14 +6,6 @@ use std::path::Path;
 fn main() {
     let out_dir = env::var("OUT_DIR").unwrap();
 
-    generate_big5_test_files(
-        File::open("encoding_tables/big5_whatwg.txt").unwrap(),
-        File::create(&Path::new(&out_dir).join("big5_whatwg_test_decode_1.txt")).unwrap(),
-        File::create(&Path::new(&out_dir).join("big5_whatwg_test_decode_2.txt")).unwrap(),
-        File::create(&Path::new(&out_dir).join("big5_whatwg_test_encode_1.txt")).unwrap(),
-        File::create(&Path::new(&out_dir).join("big5_whatwg_test_encode_2.txt")).unwrap(),
-    ).unwrap();
-
     // Generate BIG5 tables.
     generate_big5_tables(
         File::open("encoding_tables/big5_whatwg.txt").unwrap(),
