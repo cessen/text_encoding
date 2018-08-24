@@ -4,6 +4,7 @@
 //! text encodings.
 
 mod ascii;
+mod big5;
 mod iso_8859_1;
 mod single_byte;
 mod utf16_be;
@@ -33,6 +34,7 @@ pub fn encode_from_str<'a>(
         Encoding::Utf16LE => utf16_le::encode_from_str(input, output),
         Encoding::Utf32BE => utf32_be::encode_from_str(input, output),
         Encoding::Utf32LE => utf32_le::encode_from_str(input, output),
+        Encoding::Big5 => big5::encode_from_str(input, output),
         Encoding::Ascii => ascii::encode_from_str(input, output),
         Encoding::Ibm866 => ibm866::encode_from_str(input, output),
         Encoding::Iso8859_1 => iso_8859_1::encode_from_str(input, output),
@@ -79,6 +81,7 @@ pub fn decode_to_str<'a>(
         Encoding::Utf16LE => utf16_le::decode_to_str(input, output),
         Encoding::Utf32BE => utf32_be::decode_to_str(input, output),
         Encoding::Utf32LE => utf32_le::decode_to_str(input, output),
+        Encoding::Big5 => big5::decode_to_str(input, output),
         Encoding::Ascii => ascii::decode_to_str(input, output),
         Encoding::Ibm866 => ibm866::decode_to_str(input, output),
         Encoding::Iso8859_1 => iso_8859_1::decode_to_str(input, output),
@@ -123,7 +126,7 @@ pub enum Encoding {
     Utf32LE, // Little endian
     // ShiftJIS,
     // EUC_JP,
-    // Big5,
+    Big5,
     Ascii,       // US Ascii
     Ibm866,      // IBM 866
     Iso8859_1,   // ISO/IEC 8859-1, Latin1

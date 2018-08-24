@@ -184,7 +184,7 @@ fn generate_tables_from_index<R: Read, W: Write>(
     out_file.write_all(
         format!(
             r#"
-const ENCODE_TABLE: [(char, u8); {}] = [
+const ENCODE_TABLE: [(char, u32); {}] = [
 "#,
             rev_table.len()
         ).as_bytes(),
