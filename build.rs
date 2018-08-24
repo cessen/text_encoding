@@ -147,7 +147,7 @@ fn main() {
 /// starting with # are ignored.
 fn generate_big5_tables<R: Read, W: Write>(in_file: R, mut out_file: W) -> std::io::Result<()> {
     // Load table into memory.
-    let mut table = {
+    let table = {
         let in_file = std::io::BufReader::new(in_file);
         let mut table = Vec::new();
         for line in in_file.lines() {
@@ -171,6 +171,9 @@ fn generate_big5_tables<R: Read, W: Write>(in_file: R, mut out_file: W) -> std::
 
     // Build the decode table.
     let dec_table = {
+        let mut table = table.clone();
+        table.sort_by_key(|v| v.0);
+        table.dedup_by_key(|v| v.0);
         let mut i = 0;
         let mut dec_table: Vec<char> = Vec::new();
         for (big5_code, unicode) in &table {
@@ -193,18 +196,13 @@ fn generate_big5_tables<R: Read, W: Write>(in_file: R, mut out_file: W) -> std::
 
     // Build the encode table.
     let enc_table = {
+        let mut table = table.clone();
         table.sort_by_key(|v| v.1);
         table.dedup_by_key(|v| v.1);
-        let mut enc_table: Vec<(char, u32)> = Vec::new();
+        let mut enc_table: Vec<(char, [u8; 2])> = Vec::new();
         for (big5_code, unicode) in &table {
-            let index = {
-                let byte_1 = big5_code >> 8;
-                let byte_2 = big5_code & 0xFF;
-                let lead = (byte_1 - 0x81u32) * 157u32;
-                let offset = if byte_2 < 0x7fu32 { 0x40u32 } else { 0x62u32 };
-                lead + byte_2 - offset
-            };
-            enc_table.push((*unicode, index));
+            let big5_bytes = [(big5_code >> 8) as u8, (big5_code & 0xFF) as u8];
+            enc_table.push((*unicode, big5_bytes));
         }
         enc_table
     };
@@ -213,17 +211,22 @@ fn generate_big5_tables<R: Read, W: Write>(in_file: R, mut out_file: W) -> std::
     out_file.write_all(
         format!(
             r#"
-const ENCODE_TABLE: [(char, u32); {}] = [
+const ENCODE_TABLE: [(char, [u8; 2]); {}] = [
 "#,
             enc_table.len()
         ).as_bytes(),
     )?;
 
-    for (ii, (c, i)) in enc_table.iter().enumerate() {
+    for (ii, (unicode, big5_bytes)) in enc_table.iter().enumerate() {
         if ii % 4 == 0 && ii != 0 {
             out_file.write_all("\n".as_bytes())?;
         }
-        out_file.write_all(format!("('\\u{{{:X}}}', 0x{:X}), ", *c as u32, i).as_bytes())?;
+        out_file.write_all(
+            format!(
+                "('\\u{{{:X}}}', [0x{:X}, 0x{:X}]), ",
+                *unicode as u32, big5_bytes[0], big5_bytes[1],
+            ).as_bytes(),
+        )?;
     }
 
     out_file.write_all(

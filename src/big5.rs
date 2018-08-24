@@ -20,22 +20,13 @@ pub fn encode_from_str<'a>(input: &str, output: &'a mut [u8]) -> EncodeResult<'a
             output_i += 1;
             input_i = offset + 1;
         } else if let Ok(ptr_i) = ENCODE_TABLE.binary_search_by_key(&c, |x| x.0) {
-            let big5_ptr = ENCODE_TABLE[ptr_i].1;
             if (output_i + 1) < output.len() {
-                let (byte_1, byte_2) = {
-                    let lead = big5_ptr / 157 + 0x81;
-                    let trail = big5_ptr % 157;
-                    let offset = if trail < 0x3F { 0x40 } else { 0x62 };
-                    (lead as u8, (trail + offset) as u8)
-                };
-                output[output_i] = byte_1;
-                output[output_i + 1] = byte_2;
+                let big5_bytes = ENCODE_TABLE[ptr_i].1;
+                output[output_i] = big5_bytes[0];
+                output[output_i + 1] = big5_bytes[1];
                 output_i += 2;
                 input_i = offset + 1;
             } else {
-                // TODO: handle big5_ptr == 1133, 1135, 1164, or 1166,
-                // which aren't in the table and need to be handled
-                // specially.
                 break;
             }
         } else {
