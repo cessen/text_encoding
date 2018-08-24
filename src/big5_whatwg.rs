@@ -53,6 +53,7 @@ pub fn encode_from_str<'a>(input: &str, output: &'a mut [u8]) -> EncodeResult<'a
 pub fn decode_to_str<'a>(input: &[u8], output: &'a mut [u8]) -> DecodeResult<'a> {
     let mut input_i = 0;
     let mut output_i = 0;
+    let mut buf = [0u8; 4]; // For encoding utf8 codepoints.
 
     // Loop through the input, getting 2 bytes at a time.
     let mut itr = input.iter();
@@ -68,9 +69,16 @@ pub fn decode_to_str<'a>(input: &[u8], output: &'a mut [u8]) -> DecodeResult<'a>
             }
         } else {
             // Decode to scalar value.
-            let code = if let Some(&byte_2) = itr.next() {
+            let string = if let Some(&byte_2) = itr.next() {
+                if byte_1 < 0x81 || byte_1 > 0xFE {
+                    // Error: invalid leading byte.
+                    return Err(DecodeError {
+                        error_range: (input_i, input_i + 2),
+                        output_bytes_written: output_i,
+                    });
+                }
                 if byte_2 < 0x40 || byte_2 > 0xFE || (byte_2 > 0x7E && byte_2 < 0xA1) {
-                    // Invalid trailing byte.
+                    // Error: invalid trailing byte.
                     return Err(DecodeError {
                         error_range: (input_i, input_i + if byte_2 <= 127 { 1 } else { 2 }),
                         output_bytes_written: output_i,
@@ -85,32 +93,40 @@ pub fn decode_to_str<'a>(input: &[u8], output: &'a mut [u8]) -> DecodeResult<'a>
                     };
                     lead + trail
                 };
+
+                // Get our string, either from the table or by special handling.
                 if big5_ptr >= DECODE_TABLE.len() || DECODE_TABLE[big5_ptr] == '�' {
-                    // Error: undefined code.
-                    return Err(DecodeError {
-                        error_range: (input_i, input_i + 2),
-                        output_bytes_written: output_i,
-                    });
-                    // TODO: handle big5_ptr == 1133, 1135, 1164, or 1166,
-                    // which aren't in the table and need to be handled
-                    // specially.
+                    match big5_ptr {
+                        // Special handling for codes that map to graphemes.
+                        1133 => "\u{00CA}\u{0304}",
+                        1135 => "\u{00CA}\u{030C}",
+                        1164 => "\u{00EA}\u{0304}",
+                        1166 => "\u{00EA}\u{030C}",
+                        _ => {
+                            // Error: undefined code.
+                            return Err(DecodeError {
+                                error_range: (input_i, input_i + 2),
+                                output_bytes_written: output_i,
+                            });
+                        }
+                    }
+                } else {
+                    // Encode codepoint to utf8.
+                    DECODE_TABLE[big5_ptr].encode_utf8(&mut buf)
                 }
-                DECODE_TABLE[big5_ptr]
             } else {
                 break;
             };
 
-            // Encode to utf8.
-            let mut buf = [0u8; 4];
-            let s = code.encode_utf8(&mut buf);
-            if (output_i + s.len()) > output.len() {
+            // Copy decoded data to output.
+            if (output_i + string.len()) > output.len() {
                 break;
             }
-            output[output_i..(output_i + s.len())].copy_from_slice(s.as_bytes());
+            output[output_i..(output_i + string.len())].copy_from_slice(string.as_bytes());
 
             // Update our counters.
             input_i += 2;
-            output_i += s.len();
+            output_i += string.len();
         }
     }
 

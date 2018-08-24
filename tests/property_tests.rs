@@ -395,4 +395,20 @@ proptest! {
         let mut buf = vec![0u8; 4096];
         let _ = encode_from_str(Encoding::Iso8859_7, text, &mut buf);
     }
+
+    #[test]
+    fn pt_big5_whatwg_decode_random_bytes(ref data in vec(0u8..=255, 0..512)) {
+        // Attempt to decode, but probably fail.  The important thing is that
+        // it should never panic, only return errors.
+        let mut buf = vec![0u8; 4096];
+        let _ = decode_to_str(Encoding::Big5_WHATWG, data, &mut buf);
+    }
+
+    #[test]
+    fn pt_big5_whatwg_encode_random_text(ref text in "\\PC*\\PC*\\PC*") {
+        // Attempt to encode, but probably fail.  The important thing is that
+        // it should never panic, only return errors.
+        let mut buf = vec![0u8; 4096];
+        let _ = encode_from_str(Encoding::Big5_WHATWG, text, &mut buf);
+    }
 }
