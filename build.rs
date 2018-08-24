@@ -6,10 +6,18 @@ use std::path::Path;
 fn main() {
     let out_dir = env::var("OUT_DIR").unwrap();
 
+    generate_big5_test_files(
+        File::open("encoding_tables/big5_whatwg.txt").unwrap(),
+        File::create(&Path::new(&out_dir).join("big5_whatwg_test_decode_1.txt")).unwrap(),
+        File::create(&Path::new(&out_dir).join("big5_whatwg_test_decode_2.txt")).unwrap(),
+        File::create(&Path::new(&out_dir).join("big5_whatwg_test_encode_1.txt")).unwrap(),
+        File::create(&Path::new(&out_dir).join("big5_whatwg_test_encode_2.txt")).unwrap(),
+    ).unwrap();
+
     // Generate BIG5 tables.
-    generate_tables_from_index(
-        File::open("encoding_tables/index-big5.txt").unwrap(),
-        File::create(&Path::new(&out_dir).join("big5_tables.rs")).unwrap(),
+    generate_big5_tables(
+        File::open("encoding_tables/big5_whatwg.txt").unwrap(),
+        File::create(&Path::new(&out_dir).join("big5_whatwg_tables.rs")).unwrap(),
     ).unwrap();
 
     // Generate all of the single byte encoding tables and wrapper code.
@@ -133,17 +141,14 @@ fn main() {
     }
 }
 
-/// Generates tables for encoding conversion from text indexes in the WHATWG
-/// encoding-standard index format.
-fn generate_tables_from_index<R: Read, W: Write>(
-    in_file: R,
-    mut out_file: W,
-) -> std::io::Result<()> {
-    let in_file = std::io::BufReader::new(in_file);
-
-    // Collect the table.
-    let table = {
-        let mut i = 0;
+/// Generates tables for BIG5 encoding conversion.  Input should be a file
+/// with hex-encoded (e.g. 0xA040) BIG5 in a column on the left and
+/// corresponding hex-encoded Unicode scalar values on the right.  Lines
+/// starting with # are ignored.
+fn generate_big5_tables<R: Read, W: Write>(in_file: R, mut out_file: W) -> std::io::Result<()> {
+    // Load table into memory.
+    let mut table = {
+        let in_file = std::io::BufReader::new(in_file);
         let mut table = Vec::new();
         for line in in_file.lines() {
             let tmp = line.unwrap();
@@ -154,30 +159,54 @@ fn generate_tables_from_index<R: Read, W: Write>(
 
             let elements: Vec<_> = line.split_whitespace().collect();
             if elements.len() >= 2 {
-                let index = elements[0].parse::<usize>().unwrap();
-                while i < index {
-                    table.push('�');
-                    i += 1;
-                }
-                let code = std::char::from_u32(u32::from_str_radix(&elements[1][2..], 16).unwrap())
-                    .unwrap();
-                table.push(code);
+                let big5 = u32::from_str_radix(&elements[0][2..], 16).unwrap();
+                let unicode = std::char::from_u32(
+                    u32::from_str_radix(&elements[1][2..], 16).unwrap(),
+                ).unwrap();
+                table.push((big5, unicode));
             }
-            i += 1;
         }
         table
     };
 
-    // Build the reverse table.
-    let rev_table = {
-        let mut rev_table = Vec::new();
-        for (i, c) in table.iter().enumerate() {
-            if *c != '�' {
-                rev_table.push((*c, i));
+    // Build the decode table.
+    let dec_table = {
+        let mut i = 0;
+        let mut dec_table: Vec<char> = Vec::new();
+        for (big5_code, unicode) in &table {
+            let index = {
+                let byte_1 = big5_code >> 8;
+                let byte_2 = big5_code & 0xFF;
+                let lead = (byte_1 - 0x81u32) * 157u32;
+                let offset = if byte_2 < 0x7fu32 { 0x40u32 } else { 0x62u32 };
+                lead + byte_2 - offset
+            };
+            while i < index as usize {
+                dec_table.push('�');
+                i += 1;
             }
+            dec_table.push(*unicode);
+            i += 1;
         }
-        rev_table.sort_by_key(|x| x.0);
-        rev_table
+        dec_table
+    };
+
+    // Build the encode table.
+    let enc_table = {
+        table.sort_by_key(|v| v.1);
+        table.dedup_by_key(|v| v.1);
+        let mut enc_table: Vec<(char, u32)> = Vec::new();
+        for (big5_code, unicode) in &table {
+            let index = {
+                let byte_1 = big5_code >> 8;
+                let byte_2 = big5_code & 0xFF;
+                let lead = (byte_1 - 0x81u32) * 157u32;
+                let offset = if byte_2 < 0x7fu32 { 0x40u32 } else { 0x62u32 };
+                lead + byte_2 - offset
+            };
+            enc_table.push((*unicode, index));
+        }
+        enc_table
     };
 
     // Write encode table.
@@ -186,11 +215,11 @@ fn generate_tables_from_index<R: Read, W: Write>(
             r#"
 const ENCODE_TABLE: [(char, u32); {}] = [
 "#,
-            rev_table.len()
+            enc_table.len()
         ).as_bytes(),
     )?;
 
-    for (ii, (c, i)) in rev_table.iter().enumerate() {
+    for (ii, (c, i)) in enc_table.iter().enumerate() {
         if ii % 4 == 0 && ii != 0 {
             out_file.write_all("\n".as_bytes())?;
         }
@@ -211,11 +240,11 @@ const ENCODE_TABLE: [(char, u32); {}] = [
             r#"
 const DECODE_TABLE: [char; {}] = [
 "#,
-            table.len()
+            dec_table.len()
         ).as_bytes(),
     )?;
 
-    for (i, c) in table.iter().enumerate() {
+    for (i, c) in dec_table.iter().enumerate() {
         if i % 8 == 0 && i != 0 {
             out_file.write_all("\n".as_bytes())?;
         }
@@ -334,6 +363,140 @@ const DECODE_TABLE: [char; 128] = [
 "#
         ).as_bytes(),
     )?;
+
+    Ok(())
+}
+
+//===========================================================================
+// UTILITES
+//
+// These are not used during the normal build process, but rather can be
+// temporarily added to generate data that we want to use elsewhere.
+//===========================================================================
+
+/// Converts the WHATWG BIG5 table into a more typical BIG5 table format,
+/// so we can use the same parsing code for all of the BIG5 tables.
+#[allow(dead_code)]
+fn whatwg_table_to_big5_table<R: Read, W: Write>(
+    in_file: R,
+    mut out_file: W,
+) -> std::io::Result<()> {
+    let in_file = std::io::BufReader::new(in_file);
+
+    // Collect the table.
+    let table = {
+        let mut table = Vec::new();
+        for line in in_file.lines() {
+            let tmp = line.unwrap();
+            let line = tmp.trim();
+            if line.starts_with("#") || line == "" {
+                continue;
+            }
+
+            let elements: Vec<_> = line.split_whitespace().collect();
+            if elements.len() >= 2 {
+                let index = elements[0].parse::<usize>().unwrap();
+                let code = std::char::from_u32(u32::from_str_radix(&elements[1][2..], 16).unwrap())
+                    .unwrap();
+                table.push((index, code));
+            }
+        }
+        table.sort_by_key(|v| v.0);
+        table
+    };
+
+    // Convert and write the table.
+    for (i, c) in table.iter() {
+        let (lead, trail) = {
+            let lead = i / 157 + 0x81;
+            let trail = i % 157;
+            let offset = if trail < 0x3F { 0x40 } else { 0x62 };
+            (lead as u8, (trail + offset) as u8)
+        };
+        out_file.write_all(format!("0x{:02X}{:02X} 0x{:X}\n", lead, trail, *c as u32).as_bytes())?;
+    }
+
+    Ok(())
+}
+
+/// Generates basic test files for the BIG5 encoders/deconders from their
+/// table files.
+#[allow(dead_code)]
+fn generate_big5_test_files<R: Read, W: Write>(
+    in_file: R,
+    mut decode_in: W,
+    mut decode_out: W,
+    mut encode_in: W,
+    mut encode_out: W,
+) -> std::io::Result<()> {
+    let in_file = std::io::BufReader::new(in_file);
+
+    // Collect the table.
+    let mut table = {
+        let mut table = Vec::new();
+        for line in in_file.lines() {
+            let tmp = line.unwrap();
+            let line = tmp.trim();
+            if line.starts_with("#") || line == "" {
+                continue;
+            }
+
+            let elements: Vec<_> = line.split_whitespace().collect();
+            if elements.len() >= 2 {
+                let big5 = u32::from_str_radix(&elements[0][2..], 16).unwrap();
+                let unicode = std::char::from_u32(
+                    u32::from_str_radix(&elements[1][2..], 16).unwrap(),
+                ).unwrap();
+                table.push((big5, unicode));
+            }
+        }
+        table
+    };
+
+    // Write the big5 decode file.  This is the input for decoding test.
+    for ascii_byte in 1..127u8 {
+        decode_in.write_all(&[ascii_byte])?;
+        decode_in.write_all("\n".as_bytes())?;
+    }
+    for (big5_code, _) in table.iter() {
+        let code_bytes = [(*big5_code >> 8) as u8, (*big5_code & 0xFF) as u8];
+        decode_in.write_all(&code_bytes)?;
+        decode_in.write_all("\n".as_bytes())?;
+    }
+
+    // Write the utf8 decode file.  This is the output for decoding test.
+    for ascii_byte in 1..127u8 {
+        decode_out.write_all(&[ascii_byte])?;
+        decode_out.write_all("\n".as_bytes())?;
+    }
+    for (_, unicode) in table.iter() {
+        decode_out.write_all(format!("{}\n", unicode.encode_utf8(&mut [0u8; 4])).as_bytes())?;
+    }
+
+    // Dedup the table for encoding test data.
+    table.sort_by_key(|v| v.1);
+    table.dedup_by_key(|v| v.1);
+    table.sort_by_key(|v| v.0);
+
+    // Write the big5 decode file.  This is the input for decoding test.
+    for ascii_byte in 1..127u8 {
+        encode_out.write_all(&[ascii_byte])?;
+        encode_out.write_all("\n".as_bytes())?;
+    }
+    for (big5_code, _) in table.iter() {
+        let code_bytes = [(*big5_code >> 8) as u8, (*big5_code & 0xFF) as u8];
+        encode_out.write_all(&code_bytes)?;
+        encode_out.write_all("\n".as_bytes())?;
+    }
+
+    // Write the utf8 decode file.  This is the output for decoding test.
+    for ascii_byte in 1..127u8 {
+        encode_in.write_all(&[ascii_byte])?;
+        encode_in.write_all("\n".as_bytes())?;
+    }
+    for (_, unicode) in table.iter() {
+        encode_in.write_all(format!("{}\n", unicode.encode_utf8(&mut [0u8; 4])).as_bytes())?;
+    }
 
     Ok(())
 }
