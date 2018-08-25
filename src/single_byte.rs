@@ -10,11 +10,11 @@ pub mod ascii {
     use super::*;
 
     pub fn encode_from_str<'a>(input: &str, output: &'a mut [u8]) -> EncodeResult<'a> {
-        single_byte_encode_from_str(&[], input, output)
+        ascii_ext_encode_from_str(&[], input, output)
     }
 
     pub fn decode_to_str<'a>(input: &[u8], output: &'a mut [u8]) -> DecodeResult<'a> {
-        single_byte_decode_to_str(&['�'; 128], input, output)
+        ascii_ext_decode_to_str(&['�'; 128], input, output)
     }
 }
 
@@ -234,10 +234,10 @@ pub mod windows_1258 {
     include!(concat!(env!("OUT_DIR"), "/windows-1258.rs"));
 }
 
-/// This is shared among the single byte encoders, and is shallowly
-/// wrapped in each of their modules.
+/// This is shared among the single byte encoders that are strict extensions
+/// of ascii.  It is shallowly wrapped in each of their modules.
 #[inline]
-fn single_byte_encode_from_str<'a>(
+fn ascii_ext_encode_from_str<'a>(
     table: &[(char, u8)],
     input: &str,
     output: &'a mut [u8],
@@ -280,10 +280,10 @@ fn single_byte_encode_from_str<'a>(
     Ok((&output[..output_i], input_i))
 }
 
-/// This is shared among the single byte decoders, and is shallowly
-/// wrapped in each of their modules.
+/// This is shared among the single byte decoders that are strict extensions
+/// of ascii.  It is shallowly wrapped in each of their modules.
 #[inline]
-fn single_byte_decode_to_str<'a>(
+fn ascii_ext_decode_to_str<'a>(
     table: &[char; 128],
     input: &[u8],
     output: &'a mut [u8],

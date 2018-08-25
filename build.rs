@@ -310,11 +310,11 @@ fn generate_single_byte_encoding_from_index<R: Read, W: Write>(
 use {{DecodeResult, EncodeResult}};
 
 pub fn encode_from_str<'a>(input: &str, output: &'a mut [u8]) -> EncodeResult<'a> {{
-    super::single_byte_encode_from_str(&ENCODE_TABLE, input, output)
+    super::ascii_ext_encode_from_str(&ENCODE_TABLE, input, output)
 }}
 
 pub fn decode_to_str<'a>(input: &[u8], output: &'a mut [u8]) -> DecodeResult<'a> {{
-    super::single_byte_decode_to_str(&DECODE_TABLE, input, output)
+    super::ascii_ext_decode_to_str(&DECODE_TABLE, input, output)
 }}
 "#
         ).as_bytes(),
