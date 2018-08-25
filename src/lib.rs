@@ -3,9 +3,7 @@
 //! A library for incrementally encoding/decoding between utf8 and various
 //! text encodings.
 
-mod ascii;
 mod big5_whatwg;
-mod iso_8859_1;
 mod single_byte;
 mod utf16_be;
 mod utf16_le;
@@ -15,9 +13,9 @@ mod utf8;
 mod utils;
 
 use single_byte::{
-    ibm866, iso_8859_10, iso_8859_13, iso_8859_14, iso_8859_15, iso_8859_16, iso_8859_2,
-    iso_8859_3, iso_8859_4, iso_8859_5, iso_8859_6, iso_8859_7, iso_8859_8, iso_8859_9, koi8_r,
-    koi8_u, macintosh, tis_620, windows_1250, windows_1251, windows_1252, windows_1253,
+    ascii, ibm866, iso_8859_1, iso_8859_10, iso_8859_13, iso_8859_14, iso_8859_15, iso_8859_16,
+    iso_8859_2, iso_8859_3, iso_8859_4, iso_8859_5, iso_8859_6, iso_8859_7, iso_8859_8, iso_8859_9,
+    koi8_r, koi8_u, macintosh, tis_620, windows_1250, windows_1251, windows_1252, windows_1253,
     windows_1254, windows_1255, windows_1256, windows_1257, windows_1258, windows_874,
     x_mac_cyrillic,
 };

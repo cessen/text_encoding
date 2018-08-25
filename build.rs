@@ -19,6 +19,10 @@ fn main() {
             File::create(&Path::new(&out_dir).join("ibm866.rs")).unwrap(),
         ).unwrap();
         generate_single_byte_encoding_from_index(
+            File::open("encoding_tables/index-iso-8859-1.txt").unwrap(),
+            File::create(&Path::new(&out_dir).join("iso-8859-1.rs")).unwrap(),
+        ).unwrap();
+        generate_single_byte_encoding_from_index(
             File::open("encoding_tables/index-iso-8859-2.txt").unwrap(),
             File::create(&Path::new(&out_dir).join("iso-8859-2.rs")).unwrap(),
         ).unwrap();
