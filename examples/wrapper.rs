@@ -8,12 +8,12 @@ fn main() {
     let mut buf = [0u8; 100];
     let utf16 = encode_from_str(Encoding::Utf16BE, text, &mut buf)
         .unwrap()
-        .1;
+        .0;
 
     let mut buf_2 = [0u8; 100];
     let text_2 = decode_to_str(Encoding::Utf16BE, utf16, &mut buf_2)
         .unwrap()
-        .1;
+        .0;
 
     assert_eq!(text, text_2);
 }

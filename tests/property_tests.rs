@@ -18,7 +18,7 @@ proptest! {
         // Encode to utf8
         let mut tmp = &text[..];
         while !tmp.is_empty() {
-            if let Ok((n, encoded)) = utf8::encode_from_str(tmp, &mut buf) {
+            if let Ok((encoded, n)) = utf8::encode_from_str(tmp, &mut buf) {
                 tmp = &tmp[n..];
                 utf8_encoded.extend_from_slice(encoded);
             } else {
@@ -29,7 +29,7 @@ proptest! {
         // Decode back from utf8
         let mut tmp = &utf8_encoded[..];
         while !tmp.is_empty() {
-            if let Ok((n, decoded)) = utf8::decode_to_str(tmp, &mut buf) {
+            if let Ok((decoded, n)) = utf8::decode_to_str(tmp, &mut buf) {
                 tmp = &tmp[n..];
                 utf8.extend(decoded.chars());
             } else {
@@ -67,7 +67,7 @@ proptest! {
         // Encode to utf16 big endian
         let mut tmp = &text[..];
         while !tmp.is_empty() {
-            if let Ok((n, encoded)) = utf16_be::encode_from_str(tmp, &mut buf) {
+            if let Ok((encoded, n)) = utf16_be::encode_from_str(tmp, &mut buf) {
                 tmp = &tmp[n..];
                 utf16.extend_from_slice(encoded);
             } else {
@@ -78,7 +78,7 @@ proptest! {
         // Decode back from utf16 big endian
         let mut tmp = &utf16[..];
         while !tmp.is_empty() {
-            if let Ok((n, decoded)) = utf16_be::decode_to_str(tmp, &mut buf) {
+            if let Ok((decoded, n)) = utf16_be::decode_to_str(tmp, &mut buf) {
                 tmp = &tmp[n..];
                 utf8.extend(decoded.chars());
             } else {
@@ -114,7 +114,7 @@ proptest! {
         // Encode to utf16 little endian
         let mut tmp = &text[..];
         while !tmp.is_empty() {
-            if let Ok((n, encoded)) = utf16_le::encode_from_str(tmp, &mut buf) {
+            if let Ok((encoded, n)) = utf16_le::encode_from_str(tmp, &mut buf) {
                 tmp = &tmp[n..];
                 utf16.extend_from_slice(encoded);
             } else {
@@ -125,7 +125,7 @@ proptest! {
         // Decode back from utf16 big endian
         let mut tmp = &utf16[..];
         while !tmp.is_empty() {
-            if let Ok((n, decoded)) = utf16_le::decode_to_str(tmp, &mut buf) {
+            if let Ok((decoded, n)) = utf16_le::decode_to_str(tmp, &mut buf) {
                 tmp = &tmp[n..];
                 utf8.extend(decoded.chars());
             } else {
@@ -161,7 +161,7 @@ proptest! {
         // Encode to utf32 big endian
         let mut tmp = &text[..];
         while !tmp.is_empty() {
-            if let Ok((n, encoded)) = utf32_be::encode_from_str(tmp, &mut buf) {
+            if let Ok((encoded, n)) = utf32_be::encode_from_str(tmp, &mut buf) {
                 tmp = &tmp[n..];
                 utf32.extend_from_slice(encoded);
             } else {
@@ -172,7 +172,7 @@ proptest! {
         // Decode back from utf32 big endian
         let mut tmp = &utf32[..];
         while !tmp.is_empty() {
-            if let Ok((n, decoded)) = utf32_be::decode_to_str(tmp, &mut buf) {
+            if let Ok((decoded, n)) = utf32_be::decode_to_str(tmp, &mut buf) {
                 tmp = &tmp[n..];
                 utf8.extend(decoded.chars());
             } else {
@@ -208,7 +208,7 @@ proptest! {
         // Encode to utf32 little endian
         let mut tmp = &text[..];
         while !tmp.is_empty() {
-            if let Ok((n, encoded)) = utf32_le::encode_from_str(tmp, &mut buf) {
+            if let Ok((encoded, n)) = utf32_le::encode_from_str(tmp, &mut buf) {
                 tmp = &tmp[n..];
                 utf32.extend_from_slice(encoded);
             } else {
@@ -219,7 +219,7 @@ proptest! {
         // Decode back from utf32 little endian
         let mut tmp = &utf32[..];
         while !tmp.is_empty() {
-            if let Ok((n, decoded)) = utf32_le::decode_to_str(tmp, &mut buf) {
+            if let Ok((decoded, n)) = utf32_le::decode_to_str(tmp, &mut buf) {
                 tmp = &tmp[n..];
                 utf8.extend(decoded.chars());
             } else {
@@ -255,7 +255,7 @@ proptest! {
         // Decode from ascii to utf8
         let mut tmp = &data[..];
         while !tmp.is_empty() {
-            if let Ok((n, decoded)) = ascii::decode_to_str(tmp, &mut buf) {
+            if let Ok((decoded, n)) = ascii::decode_to_str(tmp, &mut buf) {
                 tmp = &tmp[n..];
                 utf8.extend(decoded.chars());
             } else {
@@ -266,7 +266,7 @@ proptest! {
         // Encode to from utf8 back to ascii
         let mut tmp = &utf8[..];
         while !tmp.is_empty() {
-            if let Ok((n, encoded)) = ascii::encode_from_str(tmp, &mut buf) {
+            if let Ok((encoded, n)) = ascii::encode_from_str(tmp, &mut buf) {
                 tmp = &tmp[n..];
                 ascii.extend_from_slice(encoded);
             } else {
@@ -302,7 +302,7 @@ proptest! {
         // Decode from latin1 to utf8
         let mut tmp = &data[..];
         while !tmp.is_empty() {
-            if let Ok((n, decoded)) = iso_8859_1::decode_to_str(tmp, &mut buf) {
+            if let Ok((decoded, n)) = iso_8859_1::decode_to_str(tmp, &mut buf) {
                 tmp = &tmp[n..];
                 utf8.extend(decoded.chars());
             } else {
@@ -313,7 +313,7 @@ proptest! {
         // Encode to from utf8 back to latin1
         let mut tmp = &utf8[..];
         while !tmp.is_empty() {
-            if let Ok((n, encoded)) = iso_8859_1::encode_from_str(tmp, &mut buf) {
+            if let Ok((encoded, n)) = iso_8859_1::encode_from_str(tmp, &mut buf) {
                 tmp = &tmp[n..];
                 latin1.extend_from_slice(encoded);
             } else {
@@ -358,7 +358,7 @@ proptest! {
         // Decode from iso-8859-7 to utf8
         let mut tmp = &data[..];
         while !tmp.is_empty() {
-            if let Ok((n, decoded)) = iso_8859_7::decode_to_str(tmp, &mut buf) {
+            if let Ok((decoded, n)) = iso_8859_7::decode_to_str(tmp, &mut buf) {
                 tmp = &tmp[n..];
                 utf8.extend(decoded.chars());
             } else {
@@ -369,7 +369,7 @@ proptest! {
         // Encode to from utf8 back to iso-8859-7
         let mut tmp = &utf8[..];
         while !tmp.is_empty() {
-            if let Ok((n, encoded)) = iso_8859_7::encode_from_str(tmp, &mut buf) {
+            if let Ok((encoded, n)) = iso_8859_7::encode_from_str(tmp, &mut buf) {
                 tmp = &tmp[n..];
                 iso8859_7.extend_from_slice(encoded);
             } else {

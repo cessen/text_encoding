@@ -9,7 +9,7 @@ use {DecodeError, DecodeResult, EncodeResult};
 pub fn encode_from_str<'a>(input: &str, output: &'a mut [u8]) -> EncodeResult<'a> {
     let cl = copy_len(input.as_bytes(), output.len());
     output[..cl].copy_from_slice(input[..cl].as_bytes());
-    Ok((cl, &output[..cl]))
+    Ok((&output[..cl], cl))
 }
 
 pub fn decode_to_str<'a>(input: &[u8], output: &'a mut [u8]) -> DecodeResult<'a> {
@@ -50,9 +50,10 @@ pub fn decode_to_str<'a>(input: &[u8], output: &'a mut [u8]) -> DecodeResult<'a>
     }
 
     // No error, return success.
-    Ok((bytes_copied, unsafe {
-        core::str::from_utf8_unchecked(&output[..bytes_copied])
-    }))
+    Ok((
+        unsafe { core::str::from_utf8_unchecked(&output[..bytes_copied]) },
+        bytes_copied,
+    ))
 }
 
 /// Calculates how many bytes should be copied from input to output given
@@ -83,7 +84,7 @@ mod tests {
     fn encode_01() {
         let text = "こんにちは！";
         let mut buf = [0u8; 2];
-        let (consumed_count, encoded) = encode_from_str(text, &mut buf).unwrap();
+        let (encoded, consumed_count) = encode_from_str(text, &mut buf).unwrap();
         assert_eq!(consumed_count, 0);
         assert_eq!(encoded, &[]);
     }
@@ -92,7 +93,7 @@ mod tests {
     fn encode_02() {
         let text = "こんにちは！";
         let mut buf = [0u8; 3];
-        let (consumed_count, encoded) = encode_from_str(text, &mut buf).unwrap();
+        let (encoded, consumed_count) = encode_from_str(text, &mut buf).unwrap();
         assert_eq!(consumed_count, 3);
         assert_eq!(encoded, &[0xE3, 0x81, 0x93]);
     }
@@ -101,7 +102,7 @@ mod tests {
     fn encode_03() {
         let text = "こんにちは！";
         let mut buf = [0u8; 5];
-        let (consumed_count, encoded) = encode_from_str(text, &mut buf).unwrap();
+        let (encoded, consumed_count) = encode_from_str(text, &mut buf).unwrap();
         assert_eq!(consumed_count, 3);
         assert_eq!(encoded, &[0xE3, 0x81, 0x93]);
     }
@@ -113,7 +114,7 @@ mod tests {
             0xAF, 0xEF, 0xBC, 0x81,
         ]; // "こんにちは！"
         let mut buf = [0u8; 2];
-        let (consumed_count, decoded) = decode_to_str(&data, &mut buf).unwrap();
+        let (decoded, consumed_count) = decode_to_str(&data, &mut buf).unwrap();
         assert_eq!(consumed_count, 0);
         assert_eq!(decoded, "");
     }
@@ -125,7 +126,7 @@ mod tests {
             0xAF, 0xEF, 0xBC, 0x81,
         ]; // "こんにちは！"
         let mut buf = [0u8; 3];
-        let (consumed_count, decoded) = decode_to_str(&data, &mut buf).unwrap();
+        let (decoded, consumed_count) = decode_to_str(&data, &mut buf).unwrap();
         assert_eq!(consumed_count, 3);
         assert_eq!(decoded, "こ");
     }
@@ -137,7 +138,7 @@ mod tests {
             0xAF, 0xEF, 0xBC, 0x81,
         ]; // "こんにちは！"
         let mut buf = [0u8; 5];
-        let (consumed_count, decoded) = decode_to_str(&data, &mut buf).unwrap();
+        let (decoded, consumed_count) = decode_to_str(&data, &mut buf).unwrap();
         assert_eq!(consumed_count, 3);
         assert_eq!(decoded, "こ");
     }
@@ -149,7 +150,7 @@ mod tests {
             0xAF, 0xEF, 0xBC,
         ]; // "こんにちは！" with last byte chopped off.
         let mut buf = [0u8; 64];
-        let (consumed_count, decoded) = decode_to_str(&data, &mut buf).unwrap();
+        let (decoded, consumed_count) = decode_to_str(&data, &mut buf).unwrap();
         assert_eq!(consumed_count, 15);
         assert_eq!(decoded, "こんにちは");
     }
@@ -161,7 +162,7 @@ mod tests {
             0xAF, 0xEF,
         ]; // "こんにちは！" with last 2 bytes chopped off.
         let mut buf = [0u8; 64];
-        let (consumed_count, decoded) = decode_to_str(&data, &mut buf).unwrap();
+        let (decoded, consumed_count) = decode_to_str(&data, &mut buf).unwrap();
         assert_eq!(consumed_count, 15);
         assert_eq!(decoded, "こんにちは");
     }

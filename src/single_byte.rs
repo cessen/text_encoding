@@ -214,7 +214,7 @@ fn single_byte_encode_from_str<'a>(
         }
     }
 
-    Ok((input_i, &output[..output_i]))
+    Ok((&output[..output_i], input_i))
 }
 
 /// This is shared among the single byte decoders, and is shallowly
@@ -258,9 +258,10 @@ fn single_byte_decode_to_str<'a>(
         }
     }
 
-    Ok((input_i, unsafe {
-        core::str::from_utf8_unchecked(&output[..output_i])
-    }))
+    Ok((
+        unsafe { core::str::from_utf8_unchecked(&output[..output_i]) },
+        input_i,
+    ))
 }
 
 //===========================================================================
@@ -276,7 +277,7 @@ mod tests {
     fn encode_01() {
         let text = "Hello world!";
         let mut buf = [0u8; 0];
-        let (consumed_count, encoded) = encode_from_str(text, &mut buf).unwrap();
+        let (encoded, consumed_count) = encode_from_str(text, &mut buf).unwrap();
         assert_eq!(consumed_count, 0);
         assert_eq!(encoded, &[]);
     }
@@ -285,7 +286,7 @@ mod tests {
     fn encode_02() {
         let text = "Hello world!";
         let mut buf = [0u8; 1];
-        let (consumed_count, encoded) = encode_from_str(text, &mut buf).unwrap();
+        let (encoded, consumed_count) = encode_from_str(text, &mut buf).unwrap();
         assert_eq!(consumed_count, 1);
         assert_eq!(encoded, "H".as_bytes());
     }
@@ -294,7 +295,7 @@ mod tests {
     fn encode_03() {
         let text = "Hello world!";
         let mut buf = [0u8; 2];
-        let (consumed_count, encoded) = encode_from_str(text, &mut buf).unwrap();
+        let (encoded, consumed_count) = encode_from_str(text, &mut buf).unwrap();
         assert_eq!(consumed_count, 2);
         assert_eq!(encoded, "He".as_bytes());
     }
@@ -303,7 +304,7 @@ mod tests {
     fn encode_04() {
         let text = "Hello world!";
         let mut buf = [0u8; 64];
-        let (consumed_count, encoded) = encode_from_str(text, &mut buf).unwrap();
+        let (encoded, consumed_count) = encode_from_str(text, &mut buf).unwrap();
         assert_eq!(consumed_count, 12);
         assert_eq!(encoded, "Hello world!".as_bytes());
     }
@@ -312,7 +313,7 @@ mod tests {
     fn encode_05() {
         let text = "Hello world!こ";
         let mut buf = [0u8; 12];
-        let (consumed_count, encoded) = encode_from_str(text, &mut buf).unwrap();
+        let (encoded, consumed_count) = encode_from_str(text, &mut buf).unwrap();
         assert_eq!(consumed_count, 12);
         assert_eq!(encoded, "Hello world!".as_bytes());
     }
@@ -323,7 +324,7 @@ mod tests {
             0x48, 0x65, 0x6C, 0x6C, 0x6F, 0x20, 0x77, 0x6F, 0x72, 0x6C, 0x64, 0x21,
         ]; // "Hello world!"
         let mut buf = [0u8; 0];
-        let (consumed_count, decoded) = decode_to_str(&data, &mut buf).unwrap();
+        let (decoded, consumed_count) = decode_to_str(&data, &mut buf).unwrap();
         assert_eq!(consumed_count, 0);
         assert_eq!(decoded, "");
     }
@@ -334,7 +335,7 @@ mod tests {
             0x48, 0x65, 0x6C, 0x6C, 0x6F, 0x20, 0x77, 0x6F, 0x72, 0x6C, 0x64, 0x21,
         ]; // "Hello world!"
         let mut buf = [0u8; 1];
-        let (consumed_count, decoded) = decode_to_str(&data, &mut buf).unwrap();
+        let (decoded, consumed_count) = decode_to_str(&data, &mut buf).unwrap();
         assert_eq!(consumed_count, 1);
         assert_eq!(decoded, "H");
     }
@@ -345,7 +346,7 @@ mod tests {
             0x48, 0x65, 0x6C, 0x6C, 0x6F, 0x20, 0x77, 0x6F, 0x72, 0x6C, 0x64, 0x21,
         ]; // "Hello world!"
         let mut buf = [0u8; 2];
-        let (consumed_count, decoded) = decode_to_str(&data, &mut buf).unwrap();
+        let (decoded, consumed_count) = decode_to_str(&data, &mut buf).unwrap();
         assert_eq!(consumed_count, 2);
         assert_eq!(decoded, "He");
     }
@@ -356,7 +357,7 @@ mod tests {
             0x48, 0x65, 0x6C, 0x6C, 0x6F, 0x20, 0x77, 0x6F, 0x72, 0x6C, 0x64, 0x21,
         ]; // "Hello world!"
         let mut buf = [0u8; 64];
-        let (consumed_count, decoded) = decode_to_str(&data, &mut buf).unwrap();
+        let (decoded, consumed_count) = decode_to_str(&data, &mut buf).unwrap();
         assert_eq!(consumed_count, 12);
         assert_eq!(decoded, "Hello world!");
     }
@@ -368,7 +369,7 @@ mod tests {
             0xCF, 0xD0, 0xD1, 0xD3, 0xD4, 0xD5, 0xD6, 0xD7, 0xD8, 0xD9,
         ]; // "ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ"
         let mut buf = [0u8; 128];
-        let (consumed_count, decoded) = decode_to_str(&data, &mut buf).unwrap();
+        let (decoded, consumed_count) = decode_to_str(&data, &mut buf).unwrap();
         assert_eq!(consumed_count, 24);
         assert_eq!(decoded, "ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ");
     }
@@ -570,7 +571,7 @@ mod tests {
         let mut buf = [0u8; 64];
         // Make sure all the allowed code points encode correctly.
         for i in 0..=255u8 {
-            let (consumed_count, encoded) =
+            let (encoded, consumed_count) =
                 iso_8859_1::encode_from_str((i as char).encode_utf8(&mut [0u8; 4]), &mut buf)
                     .unwrap();
             assert_eq!(consumed_count, (i as char).len_utf8());
@@ -583,7 +584,7 @@ mod tests {
         let mut buf = [0u8; 64];
         // Make sure all the allowed code points encode correctly.
         for i in 0..=255u8 {
-            let (consumed_count, encoded) = iso_8859_1::decode_to_str(&[i], &mut buf).unwrap();
+            let (encoded, consumed_count) = iso_8859_1::decode_to_str(&[i], &mut buf).unwrap();
             assert_eq!(consumed_count, 1);
             assert_eq!(encoded, (i as char).encode_utf8(&mut [0u8; 4]));
         }

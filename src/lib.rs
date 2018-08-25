@@ -14,15 +14,15 @@ mod utils;
 
 /// Result type for encoding text from utf8 to a target encoding.
 ///
-/// The Ok() variant provides the number of bytes consumed and a reference
-/// to the valid encoded text data.
-pub type EncodeResult<'a> = Result<(usize, &'a [u8]), EncodeError>;
+/// The Ok() variant provides the encoded text data and the number of
+/// bytes of input consumed.
+pub type EncodeResult<'a> = Result<(&'a [u8], usize), EncodeError>;
 
 /// Result type for decoding text from a target encoding to utf8.
 ///
-/// The Ok() variant provides the number of bytes consumed and a reference
-/// to the valid decoded text.
-pub type DecodeResult<'a> = Result<(usize, &'a str), DecodeError>;
+/// The Ok() variant provides the decoded text and the number of bytes
+/// of input consumed.
+pub type DecodeResult<'a> = Result<(&'a str, usize), DecodeError>;
 
 /// Represents an error when encoding from utf8 to some other format.
 ///

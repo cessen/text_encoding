@@ -47,7 +47,7 @@ pub fn encode_from_str<'a>(input: &str, output: &'a mut [u8]) -> EncodeResult<'a
         }
     }
 
-    Ok((input_i, &output[..output_i]))
+    Ok((&output[..output_i], input_i))
 }
 
 pub fn decode_to_str<'a>(input: &[u8], output: &'a mut [u8]) -> DecodeResult<'a> {
@@ -130,9 +130,10 @@ pub fn decode_to_str<'a>(input: &[u8], output: &'a mut [u8]) -> DecodeResult<'a>
         }
     }
 
-    Ok((input_i, unsafe {
-        core::str::from_utf8_unchecked(&output[..output_i])
-    }))
+    Ok((
+        unsafe { core::str::from_utf8_unchecked(&output[..output_i]) },
+        input_i,
+    ))
 }
 
 #[cfg(test)]
@@ -144,7 +145,7 @@ mod tests {
         let mut buf = [0u8; 256];
         assert_eq!(
             decode_to_str(input, &mut buf),
-            Ok((input.len(), expected_output)),
+            Ok((expected_output, input.len())),
         );
     }
 
@@ -238,7 +239,7 @@ mod tests {
             0xA4, 0xB5, 0xA4, 0xE9, 0xC7, 0x56, 0xC6, 0xEA, 0xC6, 0xEA, 0xC7, 0x6F, 0xA1, 0x49,
         ]; // "今日はいいよ！"
         let mut buf = [0u8; 2];
-        let (consumed_count, decoded) = decode_to_str(&data, &mut buf).unwrap();
+        let (decoded, consumed_count) = decode_to_str(&data, &mut buf).unwrap();
         assert_eq!(consumed_count, 0);
         assert_eq!(decoded, "");
     }
@@ -249,7 +250,7 @@ mod tests {
             0xA4, 0xB5, 0xA4, 0xE9, 0xC7, 0x56, 0xC6, 0xEA, 0xC6, 0xEA, 0xC7, 0x6F, 0xA1, 0x49,
         ]; // "今日はいいよ！"
         let mut buf = [0u8; 3];
-        let (consumed_count, decoded) = decode_to_str(&data, &mut buf).unwrap();
+        let (decoded, consumed_count) = decode_to_str(&data, &mut buf).unwrap();
         assert_eq!(consumed_count, 2);
         assert_eq!(decoded, "今");
     }
@@ -260,7 +261,7 @@ mod tests {
             0xA4, 0xB5, 0xA4, 0xE9, 0xC7, 0x56, 0xC6, 0xEA, 0xC6, 0xEA, 0xC7, 0x6F, 0xA1, 0x49,
         ]; // "今日はいいよ！"
         let mut buf = [0u8; 5];
-        let (consumed_count, decoded) = decode_to_str(&data, &mut buf).unwrap();
+        let (decoded, consumed_count) = decode_to_str(&data, &mut buf).unwrap();
         assert_eq!(consumed_count, 2);
         assert_eq!(decoded, "今");
     }
@@ -271,7 +272,7 @@ mod tests {
             0xA4, 0xB5, 0x80, 0x61, 0xC7, 0x56, 0xC6, 0xEA, 0xC6, 0xEA, 0xC7, 0x6F, 0xA1, 0x49,
         ]; // "今日はいいよ！" with an error on the second char (invalid sequence)
         let mut buf = [0u8; 3];
-        let (consumed_count, decoded) = decode_to_str(&data, &mut buf).unwrap();
+        let (decoded, consumed_count) = decode_to_str(&data, &mut buf).unwrap();
         assert_eq!(consumed_count, 2);
         assert_eq!(decoded, "今");
     }
@@ -280,7 +281,7 @@ mod tests {
     fn decode_06() {
         let data = [0xA4, 0xB5, 0xA4, 0xE9, 0x61, 0xC7, 0x56, 0x62];
         let mut buf = [0u8; 11];
-        let (consumed_count, encoded) = decode_to_str(&data, &mut buf).unwrap();
+        let (encoded, consumed_count) = decode_to_str(&data, &mut buf).unwrap();
         assert_eq!(consumed_count, 8);
         assert_eq!(encoded, "今日aはb");
     }
@@ -352,7 +353,7 @@ mod tests {
     fn encode_01() {
         let text = "今日はいいよ！";
         let mut buf = [0u8; 1];
-        let (consumed_count, encoded) = encode_from_str(text, &mut buf).unwrap();
+        let (encoded, consumed_count) = encode_from_str(text, &mut buf).unwrap();
         assert_eq!(consumed_count, 0);
         assert_eq!(encoded, &[]);
     }
@@ -361,7 +362,7 @@ mod tests {
     fn encode_02() {
         let text = "今日はいいよ！";
         let mut buf = [0u8; 2];
-        let (consumed_count, encoded) = encode_from_str(text, &mut buf).unwrap();
+        let (encoded, consumed_count) = encode_from_str(text, &mut buf).unwrap();
         assert_eq!(consumed_count, 3);
         assert_eq!(encoded, &[0xA4, 0xB5]);
     }
@@ -370,7 +371,7 @@ mod tests {
     fn encode_03() {
         let text = "今日はいいよ！";
         let mut buf = [0u8; 3];
-        let (consumed_count, encoded) = encode_from_str(text, &mut buf).unwrap();
+        let (encoded, consumed_count) = encode_from_str(text, &mut buf).unwrap();
         assert_eq!(consumed_count, 3);
         assert_eq!(encoded, &[0xA4, 0xB5]);
     }
@@ -379,7 +380,7 @@ mod tests {
     fn encode_05() {
         let text = "今日aはbいいよ！";
         let mut buf = [0u8; 8];
-        let (consumed_count, encoded) = encode_from_str(text, &mut buf).unwrap();
+        let (encoded, consumed_count) = encode_from_str(text, &mut buf).unwrap();
         assert_eq!(consumed_count, 11);
         assert_eq!(encoded, &[0xA4, 0xB5, 0xA4, 0xE9, 0x61, 0xC7, 0x56, 0x62]);
     }
@@ -388,7 +389,7 @@ mod tests {
     fn encode_04() {
         let text = "今日😺はいいよ！";
         let mut buf = [0u8; 4];
-        let (consumed_count, encoded) = encode_from_str(text, &mut buf).unwrap();
+        let (encoded, consumed_count) = encode_from_str(text, &mut buf).unwrap();
         assert_eq!(consumed_count, 6);
         assert_eq!(encoded, &[0xA4, 0xB5, 0xA4, 0xE9]);
     }
