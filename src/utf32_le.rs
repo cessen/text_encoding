@@ -1,8 +1,4 @@
-//! Encoding/decoding functions for big-endian UTF-32.
-//!
-//! Because both utf8 and utf32 can represent the entirety of unicode, the
-//! only possible error is when invalid utf32 is encountered when decoding
-//! to utf8.
+//! Little-endian UTF-32.
 
 use core;
 use utils::{from_little_endian_u32, to_little_endian_u32};

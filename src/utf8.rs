@@ -1,6 +1,8 @@
+//! UTF-8.
+//!
 //! These functions are essentially redundant, since they're supposedly
 //! encoding/decoding between utf8 and... utf8.  However, `decode_to_str()`
-//! is still useful for validating unknown input.  And they allow a uniform
+//! is still useful for validating unknown input.  And they provide a uniform
 //! API for all encodings.
 
 use core;

@@ -1,4 +1,4 @@
-//! Encoding/decoding functions for the WHATWG variant of BIG5.
+//! The WHATWG variant of BIG5.
 
 use core;
 use {DecodeError, DecodeResult, EncodeError, EncodeResult};

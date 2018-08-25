@@ -39,7 +39,7 @@ pub enum Encoding {
     Iso8859_8,   // ISO/IEC 8859-8
     Iso8859_9,   // ISO/IEC 8859-9
     Iso8859_10,  // ISO/IEC 8859-10
-    Tis620,      // TIS-620, also called ISO/IEC 8859-11
+    Iso8859_11,  // ISO/IEC 8859-11, also called TIS-620
     Iso8859_13,  // ISO/IEC 8859-13
     Iso8859_14,  // ISO/IEC 8859-14
     Iso8859_15,  // ISO/IEC 8859-15
@@ -47,6 +47,7 @@ pub enum Encoding {
     Koi8R,       // KOI8-R
     Koi8U,       // KOI8-U
     Macintosh,   // Macintosh
+    MacCyrillic, // x-max-cyrillic
     Windows874,  // Windows code page 874
     Windows1250, // Windows code page 1250
     Windows1251, // Windows code page 1251
@@ -57,7 +58,6 @@ pub enum Encoding {
     Windows1256, // Windows code page 1256
     Windows1257, // Windows code page 1257
     Windows1258, // Windows code page 1258
-    MacCyrillic, // x-max-cyrillic
 }
 
 /// Encodes text from utf8 to a destination encoding.
@@ -74,7 +74,7 @@ pub fn encode_from_str<'a>(
         Encoding::Utf32LE => utf32_le::encode_from_str(input, output),
         Encoding::Big5WHATWG => big5_whatwg::encode_from_str(input, output),
         Encoding::Ascii => ascii::encode_from_str(input, output),
-        Encoding::Ibm866 => ibm866::encode_from_str(input, output),
+        Encoding::Ibm866 => ibm_866::encode_from_str(input, output),
         Encoding::Iso8859_1 => iso_8859_1::encode_from_str(input, output),
         Encoding::Iso8859_2 => iso_8859_2::encode_from_str(input, output),
         Encoding::Iso8859_3 => iso_8859_3::encode_from_str(input, output),
@@ -85,14 +85,15 @@ pub fn encode_from_str<'a>(
         Encoding::Iso8859_8 => iso_8859_8::encode_from_str(input, output),
         Encoding::Iso8859_9 => iso_8859_9::encode_from_str(input, output),
         Encoding::Iso8859_10 => iso_8859_10::encode_from_str(input, output),
-        Encoding::Tis620 => tis_620::encode_from_str(input, output),
+        Encoding::Iso8859_11 => iso_8859_11::encode_from_str(input, output),
         Encoding::Iso8859_13 => iso_8859_13::encode_from_str(input, output),
         Encoding::Iso8859_14 => iso_8859_14::encode_from_str(input, output),
         Encoding::Iso8859_15 => iso_8859_15::encode_from_str(input, output),
         Encoding::Iso8859_16 => iso_8859_16::encode_from_str(input, output),
         Encoding::Koi8R => koi8_r::encode_from_str(input, output),
         Encoding::Koi8U => koi8_u::encode_from_str(input, output),
-        Encoding::Macintosh => macintosh::encode_from_str(input, output),
+        Encoding::Macintosh => mac_roman::encode_from_str(input, output),
+        Encoding::MacCyrillic => mac_cyrillic::encode_from_str(input, output),
         Encoding::Windows874 => windows_874::encode_from_str(input, output),
         Encoding::Windows1250 => windows_1250::encode_from_str(input, output),
         Encoding::Windows1251 => windows_1251::encode_from_str(input, output),
@@ -103,7 +104,6 @@ pub fn encode_from_str<'a>(
         Encoding::Windows1256 => windows_1256::encode_from_str(input, output),
         Encoding::Windows1257 => windows_1257::encode_from_str(input, output),
         Encoding::Windows1258 => windows_1258::encode_from_str(input, output),
-        Encoding::MacCyrillic => x_mac_cyrillic::encode_from_str(input, output),
     }
 }
 
@@ -121,7 +121,7 @@ pub fn decode_to_str<'a>(
         Encoding::Utf32LE => utf32_le::decode_to_str(input, output),
         Encoding::Big5WHATWG => big5_whatwg::decode_to_str(input, output),
         Encoding::Ascii => ascii::decode_to_str(input, output),
-        Encoding::Ibm866 => ibm866::decode_to_str(input, output),
+        Encoding::Ibm866 => ibm_866::decode_to_str(input, output),
         Encoding::Iso8859_1 => iso_8859_1::decode_to_str(input, output),
         Encoding::Iso8859_2 => iso_8859_2::decode_to_str(input, output),
         Encoding::Iso8859_3 => iso_8859_3::decode_to_str(input, output),
@@ -132,14 +132,15 @@ pub fn decode_to_str<'a>(
         Encoding::Iso8859_8 => iso_8859_8::decode_to_str(input, output),
         Encoding::Iso8859_9 => iso_8859_9::decode_to_str(input, output),
         Encoding::Iso8859_10 => iso_8859_10::decode_to_str(input, output),
-        Encoding::Tis620 => tis_620::decode_to_str(input, output),
+        Encoding::Iso8859_11 => iso_8859_11::decode_to_str(input, output),
         Encoding::Iso8859_13 => iso_8859_13::decode_to_str(input, output),
         Encoding::Iso8859_14 => iso_8859_14::decode_to_str(input, output),
         Encoding::Iso8859_15 => iso_8859_15::decode_to_str(input, output),
         Encoding::Iso8859_16 => iso_8859_16::decode_to_str(input, output),
         Encoding::Koi8R => koi8_r::decode_to_str(input, output),
         Encoding::Koi8U => koi8_u::decode_to_str(input, output),
-        Encoding::Macintosh => macintosh::decode_to_str(input, output),
+        Encoding::Macintosh => mac_roman::decode_to_str(input, output),
+        Encoding::MacCyrillic => mac_cyrillic::decode_to_str(input, output),
         Encoding::Windows874 => windows_874::decode_to_str(input, output),
         Encoding::Windows1250 => windows_1250::decode_to_str(input, output),
         Encoding::Windows1251 => windows_1251::decode_to_str(input, output),
@@ -150,6 +151,5 @@ pub fn decode_to_str<'a>(
         Encoding::Windows1256 => windows_1256::decode_to_str(input, output),
         Encoding::Windows1257 => windows_1257::decode_to_str(input, output),
         Encoding::Windows1258 => windows_1258::decode_to_str(input, output),
-        Encoding::MacCyrillic => x_mac_cyrillic::decode_to_str(input, output),
     }
 }

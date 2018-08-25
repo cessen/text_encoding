@@ -1,8 +1,4 @@
-//! Encoding/decoding functions for big-endian UTF-16.
-//!
-//! Because both utf8 and utf16 can represent the entirety of unicode, the
-//! only possible error is when invalid utf16 is encountered when decoding
-//! to utf8.
+//! Big-endian UTF-16.
 
 use core;
 use utils::{from_big_endian_u16, to_big_endian_u16};
