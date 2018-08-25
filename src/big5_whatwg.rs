@@ -55,7 +55,7 @@ pub fn decode_to_str<'a>(input: &[u8], output: &'a mut [u8]) -> DecodeResult<'a>
     let mut output_i = 0;
     let mut buf = [0u8; 4]; // For encoding utf8 codepoints.
 
-    // Loop through the input, getting 2 bytes at a time.
+    // Loop through the input, getting a byte at a time.
     let mut itr = input.iter();
     while let Some(&byte_1) = itr.next() {
         if output_i >= output.len() {

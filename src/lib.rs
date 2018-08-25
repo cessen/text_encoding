@@ -126,9 +126,9 @@ pub enum Encoding {
     Utf32BE, // Big endian
     Utf32LE, // Little endian
     // ShiftJIS,
+    // ShiftJIS_WHATWG,
     // EUC_JP,
     // Big5_2003,
-    // Big5_HKSCS
     Big5_WHATWG,
     Ascii,       // US Ascii
     Ibm866,      // IBM 866
