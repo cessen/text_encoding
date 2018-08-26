@@ -2,17 +2,16 @@
 
 //! A library for encoding/decoding between `&str`'s and other text encodings.
 //!
-//! This crate is designed to be realtively low-level, but also simple.  Each
+//! This crate is designed to be relatively low-level, but also simple.  Each
 //! module in the crate represents a different text encoding, and contains
 //! two functions:
 //!
 //! * `encode_from_str()`: converts a `&str` to the module's text encoding.
 //! * `decode_to_str()`: converts text in the module's text encoding to a `&str`.
 //!
-//! These functions behave identically across all modules, except (of course)
-//! that each one handles a different text encoding.  As such, the functions
-//! are undocumented in the individual modules.  Instead, see the
-//! documentation immediately below for how to use them.
+//! These functions behave identically across all modules, and are therefore
+//! undocumented in the individual modules.  Instead, see the documentation
+//! below for how to use them.
 //!
 //! # Str -> Text Encoding
 //!
