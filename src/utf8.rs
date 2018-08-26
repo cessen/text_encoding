@@ -8,13 +8,13 @@
 use core;
 use {DecodeError, DecodeResult, EncodeResult};
 
-pub fn encode_from_str<'a>(input: &str, output: &'a mut [u8]) -> EncodeResult<'a> {
-    let cl = copy_len(input.as_bytes(), output.len());
-    output[..cl].copy_from_slice(input[..cl].as_bytes());
-    Ok((&output[..cl], cl))
+pub fn encode_from_str<'a>(input: &str, out_buffer: &'a mut [u8]) -> EncodeResult<'a> {
+    let cl = copy_len(input.as_bytes(), out_buffer.len());
+    out_buffer[..cl].copy_from_slice(input[..cl].as_bytes());
+    Ok((&out_buffer[..cl], cl))
 }
 
-pub fn decode_to_str<'a>(input: &[u8], output: &'a mut [u8]) -> DecodeResult<'a> {
+pub fn decode_to_str<'a>(input: &[u8], out_buffer: &'a mut [u8]) -> DecodeResult<'a> {
     // Find how much of the data is valid utf8.
     let valid_up_to = match core::str::from_utf8(input) {
         Ok(text) => text.len(),
@@ -22,11 +22,11 @@ pub fn decode_to_str<'a>(input: &[u8], output: &'a mut [u8]) -> DecodeResult<'a>
     };
 
     // Copy over what we can.
-    let bytes_copied = copy_len(&input[..valid_up_to], output.len());
-    output[..bytes_copied].copy_from_slice(&input[..bytes_copied]);
+    let bytes_copied = copy_len(&input[..valid_up_to], out_buffer.len());
+    out_buffer[..bytes_copied].copy_from_slice(&input[..bytes_copied]);
 
     // Determine if there's an error.
-    if bytes_copied < output.len() && bytes_copied == valid_up_to && valid_up_to < input.len() {
+    if bytes_copied < out_buffer.len() && bytes_copied == valid_up_to && valid_up_to < input.len() {
         let trailing_bytes = input.len() - valid_up_to;
         let byte = input[valid_up_to];
         // First we check if we're truncated.  If we are, then don't error
@@ -53,7 +53,7 @@ pub fn decode_to_str<'a>(input: &[u8], output: &'a mut [u8]) -> DecodeResult<'a>
 
     // No error, return success.
     Ok((
-        unsafe { core::str::from_utf8_unchecked(&output[..bytes_copied]) },
+        unsafe { core::str::from_utf8_unchecked(&out_buffer[..bytes_copied]) },
         bytes_copied,
     ))
 }

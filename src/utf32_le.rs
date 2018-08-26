@@ -4,17 +4,17 @@ use core;
 use utils::{from_little_endian_u32, to_little_endian_u32};
 use {DecodeError, DecodeResult, EncodeResult};
 
-pub fn encode_from_str<'a>(input: &str, output: &'a mut [u8]) -> EncodeResult<'a> {
+pub fn encode_from_str<'a>(input: &str, out_buffer: &'a mut [u8]) -> EncodeResult<'a> {
     // Do the encode.
     let mut input_i = 0;
     let mut output_i = 0;
     for (offset, c) in input.char_indices() {
-        if (output_i + 3) < output.len() {
+        if (output_i + 3) < out_buffer.len() {
             let mut code = to_little_endian_u32(c as u32);
-            output[output_i] = code[0];
-            output[output_i + 1] = code[1];
-            output[output_i + 2] = code[2];
-            output[output_i + 3] = code[3];
+            out_buffer[output_i] = code[0];
+            out_buffer[output_i + 1] = code[1];
+            out_buffer[output_i + 2] = code[2];
+            out_buffer[output_i + 3] = code[3];
             output_i += 4;
             input_i = offset + 1;
         } else {
@@ -31,10 +31,10 @@ pub fn encode_from_str<'a>(input: &str, output: &'a mut [u8]) -> EncodeResult<'a
         }
     }
 
-    Ok((&output[..output_i], input_i))
+    Ok((&out_buffer[..output_i], input_i))
 }
 
-pub fn decode_to_str<'a>(input: &[u8], output: &'a mut [u8]) -> DecodeResult<'a> {
+pub fn decode_to_str<'a>(input: &[u8], out_buffer: &'a mut [u8]) -> DecodeResult<'a> {
     let mut input_i = 0;
     let mut output_i = 0;
 
@@ -52,10 +52,10 @@ pub fn decode_to_str<'a>(input: &[u8], output: &'a mut [u8]) -> DecodeResult<'a>
             // Encode to utf8.
             let mut buf = [0u8; 4];
             let s = code.encode_utf8(&mut buf);
-            if (output_i + s.len()) > output.len() {
+            if (output_i + s.len()) > out_buffer.len() {
                 break;
             }
-            output[output_i..(output_i + s.len())].copy_from_slice(s.as_bytes());
+            out_buffer[output_i..(output_i + s.len())].copy_from_slice(s.as_bytes());
 
             // Update our counters.
             input_i += 4;
@@ -70,7 +70,7 @@ pub fn decode_to_str<'a>(input: &[u8], output: &'a mut [u8]) -> DecodeResult<'a>
     }
 
     Ok((
-        unsafe { core::str::from_utf8_unchecked(&output[..output_i]) },
+        unsafe { core::str::from_utf8_unchecked(&out_buffer[..output_i]) },
         input_i,
     ))
 }

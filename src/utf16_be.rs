@@ -4,7 +4,7 @@ use core;
 use utils::{from_big_endian_u16, to_big_endian_u16};
 use {DecodeError, DecodeResult, EncodeResult};
 
-pub fn encode_from_str<'a>(input: &str, output: &'a mut [u8]) -> EncodeResult<'a> {
+pub fn encode_from_str<'a>(input: &str, out_buffer: &'a mut [u8]) -> EncodeResult<'a> {
     // Do the encode.
     let mut input_i = 0;
     let mut output_i = 0;
@@ -12,24 +12,24 @@ pub fn encode_from_str<'a>(input: &str, output: &'a mut [u8]) -> EncodeResult<'a
         let mut code = c as u32;
         if code <= 0xFFFF {
             // One code unit
-            if (output_i + 1) < output.len() {
+            if (output_i + 1) < out_buffer.len() {
                 let val = to_big_endian_u16(code as u16);
-                output[output_i] = val[0];
-                output[output_i + 1] = val[1];
+                out_buffer[output_i] = val[0];
+                out_buffer[output_i + 1] = val[1];
                 output_i += 2;
                 input_i = offset + 1;
             } else {
                 break;
             }
-        } else if (output_i + 3) < output.len() {
+        } else if (output_i + 3) < out_buffer.len() {
             // Two code units
             code -= 0x10000;
             let first = to_big_endian_u16(0xD800 | ((code >> 10) as u16));
             let second = to_big_endian_u16(0xDC00 | ((code as u16) & 0x3FF));
-            output[output_i] = first[0];
-            output[output_i + 1] = first[1];
-            output[output_i + 2] = second[0];
-            output[output_i + 3] = second[1];
+            out_buffer[output_i] = first[0];
+            out_buffer[output_i + 1] = first[1];
+            out_buffer[output_i + 2] = second[0];
+            out_buffer[output_i + 3] = second[1];
             output_i += 4;
             input_i = offset + 1;
         } else {
@@ -46,10 +46,10 @@ pub fn encode_from_str<'a>(input: &str, output: &'a mut [u8]) -> EncodeResult<'a
         }
     }
 
-    Ok((&output[..output_i], input_i))
+    Ok((&out_buffer[..output_i], input_i))
 }
 
-pub fn decode_to_str<'a>(input: &[u8], output: &'a mut [u8]) -> DecodeResult<'a> {
+pub fn decode_to_str<'a>(input: &[u8], out_buffer: &'a mut [u8]) -> DecodeResult<'a> {
     let mut input_i = 0;
     let mut output_i = 0;
 
@@ -100,10 +100,10 @@ pub fn decode_to_str<'a>(input: &[u8], output: &'a mut [u8]) -> DecodeResult<'a>
         // Encode to utf8.
         let mut buf = [0u8; 4];
         let s = code.encode_utf8(&mut buf);
-        if (output_i + s.len()) > output.len() {
+        if (output_i + s.len()) > out_buffer.len() {
             break;
         }
-        output[output_i..(output_i + s.len())].copy_from_slice(s.as_bytes());
+        out_buffer[output_i..(output_i + s.len())].copy_from_slice(s.as_bytes());
 
         // Update our counters.
         input_i += code.len_utf16() * 2;
@@ -111,7 +111,7 @@ pub fn decode_to_str<'a>(input: &[u8], output: &'a mut [u8]) -> DecodeResult<'a>
     }
 
     Ok((
-        unsafe { core::str::from_utf8_unchecked(&output[..output_i]) },
+        unsafe { core::str::from_utf8_unchecked(&out_buffer[..output_i]) },
         input_i,
     ))
 }

@@ -9,12 +9,12 @@ pub mod ascii {
     //! US ASCII.
     use super::*;
 
-    pub fn encode_from_str<'a>(input: &str, output: &'a mut [u8]) -> EncodeResult<'a> {
-        ascii_ext_encode_from_str(&[], input, output)
+    pub fn encode_from_str<'a>(input: &str, out_buffer: &'a mut [u8]) -> EncodeResult<'a> {
+        ascii_ext_encode_from_str(&[], input, out_buffer)
     }
 
-    pub fn decode_to_str<'a>(input: &[u8], output: &'a mut [u8]) -> DecodeResult<'a> {
-        ascii_ext_decode_to_str(&['�'; 128], input, output)
+    pub fn decode_to_str<'a>(input: &[u8], out_buffer: &'a mut [u8]) -> DecodeResult<'a> {
+        ascii_ext_decode_to_str(&['�'; 128], input, out_buffer)
     }
 }
 
