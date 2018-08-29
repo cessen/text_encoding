@@ -35,34 +35,43 @@ pub fn encode_from_str<'a>(input: &str, out_buffer: &'a mut [u8]) -> EncodeResul
             output_i += 1;
             input_i = offset + 1;
         } else {
-            if code == 0x2212 {
-                // Special case 4
-                code = 0xFF0D;
-            }
-            let code = core::char::from_u32(code).unwrap();
-            if let Ok(ptr_i) = ENCODE_TABLE.binary_search_by_key(&code, |x| x.0) {
-                if (output_i + 1) < out_buffer.len() {
-                    let (lead, trail) = {
-                        let jis_ptr = ENCODE_TABLE[ptr_i].1;
-                        let lead = jis_ptr / 188;
-                        let lead_offset = if lead < 0x1F { 0x81 } else { 0xC1 };
-                        let trail = jis_ptr % 188;
-                        let trail_offset = if trail < 0x3F { 0x40 } else { 0x41 };
-                        ((lead + lead_offset) as u8, (trail + trail_offset) as u8)
-                    };
-                    out_buffer[output_i] = lead;
-                    out_buffer[output_i + 1] = trail;
-                    output_i += 2;
-                    input_i = offset + 1;
+            if (output_i + 1) < out_buffer.len() {
+                let jis_ptr = if code >= 0xE000 && code <= 0xE757 {
+                    // Special case 5
+                    // Note: the WHATWG spec doesn't specify this, but it does it
+                    // in reverse during decoding, and these simply don't map
+                    // otherwise.  So we're just making it map back properly.
+                    code - 0xE000 + 8836
                 } else {
-                    break;
-                }
+                    if code == 0x2212 {
+                        // Special case 4
+                        code = 0xFF0D;
+                    }
+                    let code = core::char::from_u32(code).unwrap();
+                    if let Ok(ptr_i) = ENCODE_TABLE.binary_search_by_key(&code, |x| x.0) {
+                        ENCODE_TABLE[ptr_i].1
+                    } else {
+                        return Err(EncodeError {
+                            character: c,
+                            error_range: (offset, offset + c.len_utf8()),
+                            output_bytes_written: output_i,
+                        });
+                    }
+                };
+
+                let (lead, trail) = {
+                    let lead = jis_ptr / 188;
+                    let lead_offset = if lead < 0x1F { 0x81 } else { 0xC1 };
+                    let trail = jis_ptr % 188;
+                    let trail_offset = if trail < 0x3F { 0x40 } else { 0x41 };
+                    ((lead + lead_offset) as u8, (trail + trail_offset) as u8)
+                };
+                out_buffer[output_i] = lead;
+                out_buffer[output_i + 1] = trail;
+                output_i += 2;
+                input_i = offset + 1;
             } else {
-                return Err(EncodeError {
-                    character: c,
-                    error_range: (offset, offset + c.len_utf8()),
-                    output_bytes_written: output_i,
-                });
+                break;
             }
         }
     }
@@ -129,6 +138,7 @@ pub fn decode_to_str<'a>(input: &[u8], out_buffer: &'a mut [u8]) -> DecodeResult
                 };
 
                 if jis_ptr >= 8836 && jis_ptr <= 10715 {
+                    // Special case 5
                     (
                         core::char::from_u32(jis_ptr + 0xE000 - 8836)
                             .unwrap()
@@ -172,289 +182,115 @@ pub fn decode_to_str<'a>(input: &[u8], out_buffer: &'a mut [u8]) -> DecodeResult
     ))
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-//     // Helper function.
-//     fn correct_decode(input: &[u8], expected_output: &str) {
-//         let mut buf = [0u8; 256];
-//         assert_eq!(
-//             decode_to_str(input, &mut buf),
-//             Ok((input.len(), expected_output)),
-//         );
-//     }
+    // Helper function.
+    fn correct_decode(input: &[u8], expected_output: &str) {
+        let mut buf = [0u8; 256];
+        assert_eq!(
+            decode_to_str(input, &mut buf),
+            Ok((expected_output, input.len())),
+        );
+    }
 
-//     // Helper function.
-//     fn error_decode(input: &[u8], error_range: (usize, usize), bytes_written: usize) {
-//         let mut buf = [0u8; 256];
-//         assert_eq!(
-//             decode_to_str(input, &mut buf),
-//             Err(DecodeError {
-//                 error_range: error_range,
-//                 output_bytes_written: bytes_written,
-//             }),
-//         );
-//     }
+    // Helper function.
+    fn error_decode(input: &[u8], error_range: (usize, usize), bytes_written: usize) {
+        let mut buf = [0u8; 256];
+        assert_eq!(
+            decode_to_str(input, &mut buf),
+            Err(DecodeError {
+                error_range: error_range,
+                output_bytes_written: bytes_written,
+            }),
+        );
+    }
 
-//     // Adapted from tests in encoding_rs:
-//     // https://crates.io/crates/encoding_rs
-//     #[test]
-//     fn decode_01() {
-//         // ASCII
-//         correct_decode(&[0x61u8, 0x62u8], "\u{0061}\u{0062}");
+    // Helper function.
+    fn correct_encode(input: &str, expected_output: &[u8]) {
+        let mut buf = [0u8; 256];
+        assert_eq!(
+            encode_from_str(input, &mut buf),
+            Ok((expected_output, input.len())),
+        );
+    }
 
-//         // Edge cases
-//         correct_decode(&[0x87u8, 0x40u8], "\u{43F0}");
-//         correct_decode(&[0xFEu8, 0xFEu8], "\u{79D4}");
-//         correct_decode(&[0xFEu8, 0xFDu8], "\u{2910D}");
-//         correct_decode(&[0x88u8, 0x62u8], "\u{00CA}\u{0304}");
-//         correct_decode(&[0x88u8, 0x64u8], "\u{00CA}\u{030C}");
-//         correct_decode(&[0x88u8, 0x66u8], "\u{00CA}");
-//         correct_decode(&[0x88u8, 0xA3u8], "\u{00EA}\u{0304}");
-//         correct_decode(&[0x88u8, 0xA5u8], "\u{00EA}\u{030C}");
-//         correct_decode(&[0x88u8, 0xA7u8], "\u{00EA}");
-//         correct_decode(&[0x99u8, 0xD4u8], "\u{8991}");
-//         correct_decode(&[0x99u8, 0xD5u8], "\u{27967}");
-//         correct_decode(&[0x99u8, 0xD6u8], "\u{8A29}");
+    // Adapted from tests in encoding_rs:
+    // https://crates.io/crates/encoding_rs
+    #[test]
+    fn decode_01() {
+        // Empty
+        correct_decode(b"", &"");
 
-//         // Edge cases surrounded with ASCII
-//         correct_decode(
-//             &[0x61u8, 0x87u8, 0x40u8, 0x62u8],
-//             "\u{0061}\u{43F0}\u{0062}",
-//         );
-//         correct_decode(
-//             &[0x61u8, 0xFEu8, 0xFEu8, 0x62u8],
-//             "\u{0061}\u{79D4}\u{0062}",
-//         );
-//         correct_decode(
-//             &[0x61u8, 0xFEu8, 0xFDu8, 0x62u8],
-//             "\u{0061}\u{2910D}\u{0062}",
-//         );
-//         correct_decode(
-//             &[0x61u8, 0x88u8, 0x62u8, 0x62u8],
-//             "\u{0061}\u{00CA}\u{0304}\u{0062}",
-//         );
-//         correct_decode(
-//             &[0x61u8, 0x88u8, 0x64u8, 0x62u8],
-//             "\u{0061}\u{00CA}\u{030C}\u{0062}",
-//         );
-//         correct_decode(
-//             &[0x61u8, 0x88u8, 0x66u8, 0x62u8],
-//             "\u{0061}\u{00CA}\u{0062}",
-//         );
-//         correct_decode(
-//             &[0x61u8, 0x88u8, 0xA3u8, 0x62u8],
-//             "\u{0061}\u{00EA}\u{0304}\u{0062}",
-//         );
-//         correct_decode(
-//             &[0x61u8, 0x88u8, 0xA5u8, 0x62u8],
-//             "\u{0061}\u{00EA}\u{030C}\u{0062}",
-//         );
-//         correct_decode(
-//             &[0x61u8, 0x88u8, 0xA7u8, 0x62u8],
-//             "\u{0061}\u{00EA}\u{0062}",
-//         );
-//         correct_decode(
-//             &[0x61u8, 0x99u8, 0xD4u8, 0x62u8],
-//             "\u{0061}\u{8991}\u{0062}",
-//         );
-//         correct_decode(
-//             &[0x61u8, 0x99u8, 0xD5u8, 0x62u8],
-//             "\u{0061}\u{27967}\u{0062}",
-//         );
-//         correct_decode(
-//             &[0x61u8, 0x99u8, 0xD6u8, 0x62u8],
-//             "\u{0061}\u{8A29}\u{0062}",
-//         );
-//     }
+        // ASCII
+        correct_decode(b"\x61\x62", "\u{0061}\u{0062}");
 
-//     #[test]
-//     fn decode_02() {
-//         let data = [
-//             0xA4, 0xB5, 0xA4, 0xE9, 0xC7, 0x56, 0xC6, 0xEA, 0xC6, 0xEA, 0xC7, 0x6F, 0xA1, 0x49,
-//         ]; // "今日はいいよ！"
-//         let mut buf = [0u8; 2];
-//         let (consumed_count, decoded) = decode_to_str(&data, &mut buf).unwrap();
-//         assert_eq!(consumed_count, 0);
-//         assert_eq!(decoded, "");
-//     }
+        // Half-width
+        correct_decode(b"\xA1", "\u{FF61}");
+        correct_decode(b"\xDF", "\u{FF9F}");
 
-//     #[test]
-//     fn decode_03() {
-//         let data = [
-//             0xA4, 0xB5, 0xA4, 0xE9, 0xC7, 0x56, 0xC6, 0xEA, 0xC6, 0xEA, 0xC7, 0x6F, 0xA1, 0x49,
-//         ]; // "今日はいいよ！"
-//         let mut buf = [0u8; 3];
-//         let (consumed_count, decoded) = decode_to_str(&data, &mut buf).unwrap();
-//         assert_eq!(consumed_count, 2);
-//         assert_eq!(decoded, "今");
-//     }
+        // EUDC
+        correct_decode(b"\xF0\x40", "\u{E000}");
+        correct_decode(b"\xF9\xFC", "\u{E757}");
+        correct_decode(b"\xFA\x40", "\u{2170}");
 
-//     #[test]
-//     fn decode_04() {
-//         let data = [
-//             0xA4, 0xB5, 0xA4, 0xE9, 0xC7, 0x56, 0xC6, 0xEA, 0xC6, 0xEA, 0xC7, 0x6F, 0xA1, 0x49,
-//         ]; // "今日はいいよ！"
-//         let mut buf = [0u8; 5];
-//         let (consumed_count, decoded) = decode_to_str(&data, &mut buf).unwrap();
-//         assert_eq!(consumed_count, 2);
-//         assert_eq!(decoded, "今");
-//     }
+        // JIS 0208
+        correct_decode(b"\x81\x40", "\u{3000}");
+        correct_decode(b"\xEE\xFC", "\u{FF02}");
+        correct_decode(b"\xFA\x40", "\u{2170}");
+        correct_decode(b"\xFC\x4B", "\u{9ED1}");
+    }
 
-//     #[test]
-//     fn decode_05() {
-//         let data = [
-//             0xA4, 0xB5, 0x80, 0x61, 0xC7, 0x56, 0xC6, 0xEA, 0xC6, 0xEA, 0xC7, 0x6F, 0xA1, 0x49,
-//         ]; // "今日はいいよ！" with an error on the second char (invalid sequence)
-//         let mut buf = [0u8; 3];
-//         let (consumed_count, decoded) = decode_to_str(&data, &mut buf).unwrap();
-//         assert_eq!(consumed_count, 2);
-//         assert_eq!(decoded, "今");
-//     }
+    // Adapted from tests in encoding_rs:
+    // https://crates.io/crates/encoding_rs
+    #[test]
+    fn decode_error_01() {
+        error_decode(b"\xA0", (0, 1), 0);
+        error_decode(b"\xA0+", (0, 1), 0);
+        error_decode(b"\xE0+", (0, 1), 0);
 
-//     #[test]
-//     fn decode_06() {
-//         let data = [0xA4, 0xB5, 0xA4, 0xE9, 0x61, 0xC7, 0x56, 0x62];
-//         let mut buf = [0u8; 11];
-//         let (consumed_count, encoded) = decode_to_str(&data, &mut buf).unwrap();
-//         assert_eq!(consumed_count, 8);
-//         assert_eq!(encoded, "今日aはb");
-//     }
+        error_decode(b"\xEF\xFC", (0, 2), 0);
 
-//     #[test]
-//     fn decode_error_01() {
-//         error_decode(&[0x80u8, 0x61u8], (0, 1), 0); // Invalid sequence
-//         error_decode(&[0xFFu8, 0x61u8], (0, 1), 0); // Invalid sequence
-//         error_decode(&[0xFEu8, 0x39u8], (0, 1), 0); // Invalid sequence
-//         error_decode(&[0x87u8, 0x66u8], (0, 1), 0); // Undefined code
-//         error_decode(&[0x81u8, 0x40u8], (0, 1), 0); // Undefined code
+        error_decode(b"\x81\x3F", (0, 1), 0);
+        error_decode(b"\xEE\xFD", (0, 2), 0);
+        error_decode(b"\xFA\x3F", (0, 1), 0);
+        error_decode(b"\xFC\x4C", (0, 1), 0);
+    }
 
-//         // Invalid sequence, second byte outside of ascii range.
-//         error_decode(&[0x81u8, 0xA0u8], (0, 2), 0);
+    // Adapted from tests in encoding_rs:
+    // https://crates.io/crates/encoding_rs
+    #[test]
+    fn encode_01() {
+        // Empty
+        correct_encode("", b"");
 
-//         // Undefined code, second byte outside of ascii range.
-//         error_decode(&[0x81u8, 0xFEu8], (0, 2), 0);
-//     }
+        // ASCII
+        correct_encode("\u{0061}\u{0062}", b"\x61\x62");
 
-//     #[test]
-//     fn decode_error_02() {
-//         let data = [
-//             0x80, 0x61, 0xA4, 0xE9, 0xC7, 0x56, 0xC6, 0xEA, 0xC6, 0xEA, 0xC7, 0x6F, 0xA1, 0x49,
-//         ]; // "今日はいいよ！" with an error on the first char (invalid sequence)
-//         let mut buf = [0u8; 2];
-//         let error = decode_to_str(&data, &mut buf);
-//         assert_eq!(
-//             error,
-//             Err(DecodeError {
-//                 error_range: (0, 1),
-//                 output_bytes_written: 0,
-//             })
-//         );
-//     }
+        // Exceptional code points
+        correct_encode("\u{0080}", b"\x80");
+        correct_encode("\u{00A5}", b"\x5C");
+        correct_encode("\u{203E}", b"\x7E");
+        correct_encode("\u{2212}", b"\x81\x7C");
 
-//     #[test]
-//     fn decode_error_03() {
-//         let data = [
-//             0xA4, 0xB5, 0x80, 0x61, 0xC7, 0x56, 0xC6, 0xEA, 0xC6, 0xEA, 0xC7, 0x6F, 0xA1, 0x49,
-//         ]; // "今日はいいよ！" with an error on the second char (invalid sequence)
-//         let mut buf = [0u8; 4];
-//         let error = decode_to_str(&data, &mut buf);
-//         assert_eq!(
-//             error,
-//             Err(DecodeError {
-//                 error_range: (2, 3),
-//                 output_bytes_written: 3,
-//             })
-//         );
-//     }
+        // Half-width
+        correct_encode("\u{FF61}", b"\xA1");
+        correct_encode("\u{FF9F}", b"\xDF");
 
-//     #[test]
-//     fn decode_error_04() {
-//         let data = [
-//             0xA4, 0xB5, 0xA4, 0xE9, 0xC7, 0x56, 0x80, 0x61, 0xC6, 0xEA, 0xC7, 0x6F, 0xA1, 0x49,
-//         ]; // "今日はいいよ！" with an error on the fourth char (invalid sequence)
-//         let mut buf = [0u8; 64];
-//         let error = decode_to_str(&data, &mut buf);
-//         assert_eq!(
-//             error,
-//             Err(DecodeError {
-//                 error_range: (6, 7),
-//                 output_bytes_written: 9,
-//             })
-//         );
-//     }
+        // EUDC
+        correct_encode("\u{E000}", b"\xF0\x40");
+        correct_encode("\u{E757}", b"\xF9\xFC");
 
-//     #[test]
-//     fn encode_01() {
-//         let text = "今日はいいよ！";
-//         let mut buf = [0u8; 1];
-//         let (consumed_count, encoded) = encode_from_str(text, &mut buf).unwrap();
-//         assert_eq!(consumed_count, 0);
-//         assert_eq!(encoded, &[]);
-//     }
-
-//     #[test]
-//     fn encode_02() {
-//         let text = "今日はいいよ！";
-//         let mut buf = [0u8; 2];
-//         let (consumed_count, encoded) = encode_from_str(text, &mut buf).unwrap();
-//         assert_eq!(consumed_count, 3);
-//         assert_eq!(encoded, &[0xA4, 0xB5]);
-//     }
-
-//     #[test]
-//     fn encode_03() {
-//         let text = "今日はいいよ！";
-//         let mut buf = [0u8; 3];
-//         let (consumed_count, encoded) = encode_from_str(text, &mut buf).unwrap();
-//         assert_eq!(consumed_count, 3);
-//         assert_eq!(encoded, &[0xA4, 0xB5]);
-//     }
-
-//     #[test]
-//     fn encode_05() {
-//         let text = "今日aはbいいよ！";
-//         let mut buf = [0u8; 8];
-//         let (consumed_count, encoded) = encode_from_str(text, &mut buf).unwrap();
-//         assert_eq!(consumed_count, 11);
-//         assert_eq!(encoded, &[0xA4, 0xB5, 0xA4, 0xE9, 0x61, 0xC7, 0x56, 0x62]);
-//     }
-
-//     #[test]
-//     fn encode_04() {
-//         let text = "今日😺はいいよ！";
-//         let mut buf = [0u8; 4];
-//         let (consumed_count, encoded) = encode_from_str(text, &mut buf).unwrap();
-//         assert_eq!(consumed_count, 6);
-//         assert_eq!(encoded, &[0xA4, 0xB5, 0xA4, 0xE9]);
-//     }
-
-//     #[test]
-//     fn encode_error_01() {
-//         let text = "😺今日はいいよ！";
-//         let mut buf = [0u8; 64];
-//         assert_eq!(
-//             encode_from_str(text, &mut buf),
-//             Err(EncodeError {
-//                 character: '😺',
-//                 error_range: (0, 4),
-//                 output_bytes_written: 0,
-//             })
-//         );
-//     }
-
-//     #[test]
-//     fn encode_error_02() {
-//         let text = "今日😺はいいよ！";
-//         let mut buf = [0u8; 64];
-//         assert_eq!(
-//             encode_from_str(text, &mut buf),
-//             Err(EncodeError {
-//                 character: '😺',
-//                 error_range: (6, 10),
-//                 output_bytes_written: 4,
-//             })
-//         );
-//     }
-// }
+        // JIS 0208
+        correct_encode("\u{3000}", b"\x81\x40");
+        // TODO: these depend on excluding specific parts
+        // of the table that contains duplicates, to force
+        // using later entries.  Not sure if we want to do
+        // that, even though it's specified in the WHATWG
+        // spec.
+        // correct_encode("\u{FF02}", b"\xFA\x57");
+        // correct_encode("\u{2170}", b"\xFA\x40");
+        // correct_encode("\u{9ED1}", b"\xFC\x4B");
+    }
+}

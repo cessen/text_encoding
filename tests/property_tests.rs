@@ -411,4 +411,20 @@ proptest! {
         let mut buf = vec![0u8; 4096];
         let _ = big5_whatwg::encode_from_str(text, &mut buf);
     }
+
+    #[test]
+    fn pt_shiftjis_whatwg_decode_random_bytes(ref data in vec(0u8..=255, 0..512)) {
+        // Attempt to decode, but probably fail.  The important thing is that
+        // it should never panic, only return errors.
+        let mut buf = vec![0u8; 4096];
+        let _ = shiftjis_whatwg::decode_to_str(data, &mut buf);
+    }
+
+    #[test]
+    fn pt_shiftjis_whatwg_encode_random_text(ref text in "\\PC*\\PC*\\PC*") {
+        // Attempt to encode, but probably fail.  The important thing is that
+        // it should never panic, only return errors.
+        let mut buf = vec![0u8; 4096];
+        let _ = shiftjis_whatwg::encode_from_str(text, &mut buf);
+    }
 }
