@@ -36,12 +36,17 @@ pub fn encode_from_str<'a>(input: &str, out_buffer: &'a mut [u8]) -> EncodeResul
             input_i = offset + 1;
         } else {
             if (output_i + 1) < out_buffer.len() {
-                let jis_ptr = if code >= 0xE000 && code <= 0xE757 {
+                let jis_bytes = if code >= 0xE000 && code <= 0xE757 {
                     // Special case 5
                     // Note: the WHATWG spec doesn't specify this, but it does it
                     // in reverse during decoding, and these simply don't map
                     // otherwise.  So we're just making it map back properly.
-                    code - 0xE000 + 8836
+                    let jis_ptr = code - 0xE000 + 8836;
+                    let lead = jis_ptr / 188;
+                    let lead_offset = if lead < 0x1F { 0x81 } else { 0xC1 };
+                    let trail = jis_ptr % 188;
+                    let trail_offset = if trail < 0x3F { 0x40 } else { 0x41 };
+                    [(lead + lead_offset) as u8, (trail + trail_offset) as u8]
                 } else {
                     if code == 0x2212 {
                         // Special case 4
@@ -59,15 +64,8 @@ pub fn encode_from_str<'a>(input: &str, out_buffer: &'a mut [u8]) -> EncodeResul
                     }
                 };
 
-                let (lead, trail) = {
-                    let lead = jis_ptr / 188;
-                    let lead_offset = if lead < 0x1F { 0x81 } else { 0xC1 };
-                    let trail = jis_ptr % 188;
-                    let trail_offset = if trail < 0x3F { 0x40 } else { 0x41 };
-                    ((lead + lead_offset) as u8, (trail + trail_offset) as u8)
-                };
-                out_buffer[output_i] = lead;
-                out_buffer[output_i + 1] = trail;
+                out_buffer[output_i] = jis_bytes[0];
+                out_buffer[output_i + 1] = jis_bytes[1];
                 output_i += 2;
                 input_i = offset + 1;
             } else {

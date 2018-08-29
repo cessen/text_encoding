@@ -14,7 +14,7 @@ fn main() {
 
     // Generate Shift JIS tables.
     generate_shiftjis_tables(
-        File::open("encoding_tables/index-jis0208.txt").unwrap(),
+        File::open("encoding_tables/shiftjis_whatwg.txt").unwrap(),
         File::create(&Path::new(&out_dir).join("shiftjis_whatwg_tables.rs")).unwrap(),
     ).unwrap();
 
@@ -276,7 +276,7 @@ fn generate_shiftjis_tables<R: Read, W: Write>(in_file: R, mut out_file: W) -> s
     // Load table into memory.
     let table = {
         let in_file = std::io::BufReader::new(in_file);
-        let mut table = Vec::new();
+        let mut table: Vec<(u32, char)> = Vec::new();
         for line in in_file.lines() {
             let tmp = line.unwrap();
             let line = tmp.trim();
@@ -286,11 +286,11 @@ fn generate_shiftjis_tables<R: Read, W: Write>(in_file: R, mut out_file: W) -> s
 
             let elements: Vec<_> = line.split_whitespace().collect();
             if elements.len() >= 2 {
-                let jis_ptr = elements[0].parse::<u32>().unwrap();
+                let shift_jis = u32::from_str_radix(&elements[0][2..], 16).unwrap();
                 let unicode = std::char::from_u32(
                     u32::from_str_radix(&elements[1][2..], 16).unwrap(),
                 ).unwrap();
-                table.push((jis_ptr, unicode));
+                table.push((shift_jis, unicode));
             }
         }
         table
@@ -303,8 +303,15 @@ fn generate_shiftjis_tables<R: Read, W: Write>(in_file: R, mut out_file: W) -> s
         table.dedup_by_key(|v| v.0);
         let mut i = 0;
         let mut dec_table: Vec<char> = Vec::new();
-        for (jis_ptr, unicode) in &table {
-            while i < *jis_ptr as usize {
+        for (shift_jis, unicode) in &table {
+            let index = {
+                let byte_1 = shift_jis >> 8;
+                let byte_2 = shift_jis & 0xFF;
+                let lead_offset = if byte_1 < 0xA0u32 { 0x81u32 } else { 0xC1u32 };
+                let trail_offset = if byte_2 < 0x7Fu32 { 0x40u32 } else { 0x41u32 };
+                (byte_1 as u32 - lead_offset) * 188 + byte_2 as u32 - trail_offset
+            };
+            while i < index as usize {
                 dec_table.push('�');
                 i += 1;
             }
@@ -319,9 +326,10 @@ fn generate_shiftjis_tables<R: Read, W: Write>(in_file: R, mut out_file: W) -> s
         let mut table = table.clone();
         table.sort_by_key(|v| v.1);
         table.dedup_by_key(|v| v.1);
-        let mut enc_table: Vec<(char, u32)> = Vec::new();
-        for (jis_ptr, unicode) in &table {
-            enc_table.push((*unicode, *jis_ptr));
+        let mut enc_table: Vec<(char, [u8; 2])> = Vec::new();
+        for (shift_jis, unicode) in &table {
+            let shift_jis_bytes = [(shift_jis >> 8) as u8, (shift_jis & 0xFF) as u8];
+            enc_table.push((*unicode, shift_jis_bytes));
         }
         enc_table
     };
@@ -330,20 +338,20 @@ fn generate_shiftjis_tables<R: Read, W: Write>(in_file: R, mut out_file: W) -> s
     out_file.write_all(
         format!(
             r#"
-const ENCODE_TABLE: [(char, u32); {}] = [
+const ENCODE_TABLE: [(char, [u8; 2]); {}] = [
 "#,
             enc_table.len()
         ).as_bytes(),
     )?;
 
-    for (ii, (unicode, jis_ptr)) in enc_table.iter().enumerate() {
+    for (ii, (unicode, jis_bytes)) in enc_table.iter().enumerate() {
         if ii % 4 == 0 && ii != 0 {
             out_file.write_all("\n".as_bytes())?;
         }
         out_file.write_all(
             format!(
-                "('\\u{{{:X}}}', 0x{:X}), ",
-                *unicode as u32, *jis_ptr as u32,
+                "('\\u{{{:X}}}', [0x{:X}, 0x{:X}]), ",
+                *unicode as u32, jis_bytes[0], jis_bytes[1],
             ).as_bytes(),
         )?;
     }
@@ -536,6 +544,53 @@ fn whatwg_table_to_big5_table<R: Read, W: Write>(
             let trail = i % 157;
             let offset = if trail < 0x3F { 0x40 } else { 0x62 };
             (lead as u8, (trail + offset) as u8)
+        };
+        out_file.write_all(format!("0x{:02X}{:02X} 0x{:X}\n", lead, trail, *c as u32).as_bytes())?;
+    }
+
+    Ok(())
+}
+
+/// Converts the WHATWG ShiftJIS table into a more typical ShiftJIS table
+/// format, so we can use the same parsing code for all of the ShiftJIS
+/// tables.
+#[allow(dead_code)]
+fn whatwg_table_to_shiftjis_table<R: Read, W: Write>(
+    in_file: R,
+    mut out_file: W,
+) -> std::io::Result<()> {
+    let in_file = std::io::BufReader::new(in_file);
+
+    // Collect the table.
+    let table = {
+        let mut table = Vec::new();
+        for line in in_file.lines() {
+            let tmp = line.unwrap();
+            let line = tmp.trim();
+            if line.starts_with("#") || line == "" {
+                continue;
+            }
+
+            let elements: Vec<_> = line.split_whitespace().collect();
+            if elements.len() >= 2 {
+                let index = elements[0].parse::<usize>().unwrap();
+                let code = std::char::from_u32(u32::from_str_radix(&elements[1][2..], 16).unwrap())
+                    .unwrap();
+                table.push((index, code));
+            }
+        }
+        table.sort_by_key(|v| v.0);
+        table
+    };
+
+    // Convert and write the table.
+    for (i, c) in table.iter() {
+        let (lead, trail) = {
+            let lead = i / 188;
+            let lead_offset = if lead < 0x1F { 0x81 } else { 0xC1 };
+            let trail = i % 188;
+            let trail_offset = if trail < 0x3F { 0x40 } else { 0x41 };
+            ((lead + lead_offset) as u8, (trail + trail_offset) as u8)
         };
         out_file.write_all(format!("0x{:02X}{:02X} 0x{:X}\n", lead, trail, *c as u32).as_bytes())?;
     }
