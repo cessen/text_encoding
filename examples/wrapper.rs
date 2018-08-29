@@ -26,38 +26,39 @@ pub enum Encoding {
     Utf16LE,
     Utf32BE,
     Utf32LE,
-    Big5WHATWG,  // BIG5, WHATWG variant
-    Ascii,       // US Ascii
-    Ibm866,      // IBM 866
-    Iso8859_1,   // ISO/IEC 8859-1, Latin1
-    Iso8859_2,   // ISO/IEC 8859-2, Latin2
-    Iso8859_3,   // ISO/IEC 8859-3, Latin3
-    Iso8859_4,   // ISO/IEC 8859-4, Latin4
-    Iso8859_5,   // ISO/IEC 8859-5
-    Iso8859_6,   // ISO/IEC 8859-6
-    Iso8859_7,   // ISO/IEC 8859-7
-    Iso8859_8,   // ISO/IEC 8859-8
-    Iso8859_9,   // ISO/IEC 8859-9
-    Iso8859_10,  // ISO/IEC 8859-10
-    Iso8859_11,  // ISO/IEC 8859-11, also called TIS-620
-    Iso8859_13,  // ISO/IEC 8859-13
-    Iso8859_14,  // ISO/IEC 8859-14
-    Iso8859_15,  // ISO/IEC 8859-15
-    Iso8859_16,  // ISO/IEC 8859-16
-    Koi8R,       // KOI8-R
-    Koi8U,       // KOI8-U
-    Macintosh,   // Macintosh
-    MacCyrillic, // x-max-cyrillic
-    Windows874,  // Windows code page 874
-    Windows1250, // Windows code page 1250
-    Windows1251, // Windows code page 1251
-    Windows1252, // Windows code page 1252
-    Windows1253, // Windows code page 1253
-    Windows1254, // Windows code page 1254
-    Windows1255, // Windows code page 1255
-    Windows1256, // Windows code page 1256
-    Windows1257, // Windows code page 1257
-    Windows1258, // Windows code page 1258
+    Big5WHATWG,     // BIG5, WHATWG variant
+    ShiftJISWHATWG, // Shift JIS, WHATWG variant
+    Ascii,          // US Ascii
+    Ibm866,         // IBM 866
+    Iso8859_1,      // ISO/IEC 8859-1, Latin1
+    Iso8859_2,      // ISO/IEC 8859-2, Latin2
+    Iso8859_3,      // ISO/IEC 8859-3, Latin3
+    Iso8859_4,      // ISO/IEC 8859-4, Latin4
+    Iso8859_5,      // ISO/IEC 8859-5
+    Iso8859_6,      // ISO/IEC 8859-6
+    Iso8859_7,      // ISO/IEC 8859-7
+    Iso8859_8,      // ISO/IEC 8859-8
+    Iso8859_9,      // ISO/IEC 8859-9
+    Iso8859_10,     // ISO/IEC 8859-10
+    Iso8859_11,     // ISO/IEC 8859-11, also called TIS-620
+    Iso8859_13,     // ISO/IEC 8859-13
+    Iso8859_14,     // ISO/IEC 8859-14
+    Iso8859_15,     // ISO/IEC 8859-15
+    Iso8859_16,     // ISO/IEC 8859-16
+    Koi8R,          // KOI8-R
+    Koi8U,          // KOI8-U
+    Macintosh,      // Macintosh
+    MacCyrillic,    // x-max-cyrillic
+    Windows874,     // Windows code page 874
+    Windows1250,    // Windows code page 1250
+    Windows1251,    // Windows code page 1251
+    Windows1252,    // Windows code page 1252
+    Windows1253,    // Windows code page 1253
+    Windows1254,    // Windows code page 1254
+    Windows1255,    // Windows code page 1255
+    Windows1256,    // Windows code page 1256
+    Windows1257,    // Windows code page 1257
+    Windows1258,    // Windows code page 1258
 }
 
 /// Encodes text from utf8 to a destination encoding.
@@ -73,6 +74,7 @@ pub fn encode_from_str<'a>(
         Encoding::Utf32BE => utf32_be::encode_from_str(input, output),
         Encoding::Utf32LE => utf32_le::encode_from_str(input, output),
         Encoding::Big5WHATWG => big5_whatwg::encode_from_str(input, output),
+        Encoding::ShiftJISWHATWG => shiftjis_whatwg::encode_from_str(input, output),
         Encoding::Ascii => ascii::encode_from_str(input, output),
         Encoding::Ibm866 => ibm_866::encode_from_str(input, output),
         Encoding::Iso8859_1 => iso_8859_1::encode_from_str(input, output),
@@ -120,6 +122,7 @@ pub fn decode_to_str<'a>(
         Encoding::Utf32BE => utf32_be::decode_to_str(input, output),
         Encoding::Utf32LE => utf32_le::decode_to_str(input, output),
         Encoding::Big5WHATWG => big5_whatwg::decode_to_str(input, output),
+        Encoding::ShiftJISWHATWG => shiftjis_whatwg::decode_to_str(input, output),
         Encoding::Ascii => ascii::decode_to_str(input, output),
         Encoding::Ibm866 => ibm_866::decode_to_str(input, output),
         Encoding::Iso8859_1 => iso_8859_1::decode_to_str(input, output),
