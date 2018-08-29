@@ -22,6 +22,7 @@
 //! TODO: explain how to use `decode_to_str()`.
 
 pub mod big5_whatwg;
+pub mod shiftjis_whatwg;
 pub mod single_byte;
 pub mod utf16_be;
 pub mod utf16_le;

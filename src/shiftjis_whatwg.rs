@@ -31,7 +31,7 @@ pub fn encode_from_str<'a>(input: &str, out_buffer: &'a mut [u8]) -> EncodeResul
             input_i = offset + 1;
         } else if code >= 0xFF61 && code <= 0xFF9F {
             // Special case 3
-            out_buffer[output_i] = (code − 0xFF61 + 0xA1) as u8;
+            out_buffer[output_i] = (code - 0xFF61 + 0xA1) as u8;
             output_i += 1;
             input_i = offset + 1;
         } else {
@@ -39,14 +39,14 @@ pub fn encode_from_str<'a>(input: &str, out_buffer: &'a mut [u8]) -> EncodeResul
                 // Special case 4
                 code = 0xFF0D;
             }
-            let code = std::char::from_u32(code);
+            let code = core::char::from_u32(code).unwrap();
             if let Ok(ptr_i) = ENCODE_TABLE.binary_search_by_key(&code, |x| x.0) {
                 if (output_i + 1) < out_buffer.len() {
                     let (lead, trail) = {
                         let jis_ptr = ENCODE_TABLE[ptr_i].1;
-                        let lead = pointer / 188;
+                        let lead = jis_ptr / 188;
                         let lead_offset = if lead < 0x1F { 0x81 } else { 0xC1 };
-                        let trail = pointer % 188;
+                        let trail = jis_ptr % 188;
                         let trail_offset = if trail < 0x3F { 0x40 } else { 0x41 };
                         ((lead + lead_offset) as u8, (trail + trail_offset) as u8)
                     };
@@ -76,7 +76,7 @@ pub fn encode_from_str<'a>(input: &str, out_buffer: &'a mut [u8]) -> EncodeResul
         }
     }
 
-    Ok((input_i, &out_buffer[..output_i]))
+    Ok((&out_buffer[..output_i], input_i))
 }
 
 pub fn decode_to_str<'a>(input: &[u8], out_buffer: &'a mut [u8]) -> DecodeResult<'a> {
@@ -98,8 +98,10 @@ pub fn decode_to_str<'a>(input: &[u8], out_buffer: &'a mut [u8]) -> DecodeResult
             // Get our decoded data, either from the table or by special handling.
             let (string, input_consumed) = if byte_1 >= 0xA1 && byte_1 <= 0xDF {
                 // Special case 3 from encode function above.
-                ( 
-                    std::char::from_u32(byte as u32 + 0xFF61 - 0xA1).encode_utf8(&mut buf),
+                (
+                    core::char::from_u32(byte_1 as u32 + 0xFF61 - 0xA1)
+                        .unwrap()
+                        .encode_utf8(&mut buf),
                     1,
                 )
             } else if (byte_1 > 0x9F && byte_1 < 0xE0) || byte_1 > 0xFC {
@@ -128,10 +130,14 @@ pub fn decode_to_str<'a>(input: &[u8], out_buffer: &'a mut [u8]) -> DecodeResult
 
                 if jis_ptr >= 8836 && jis_ptr <= 10715 {
                     (
-                        std::char::from_u32(jis_ptr + 0xE000 - 8836).encode_utf8(&mut buf),
+                        core::char::from_u32(jis_ptr + 0xE000 - 8836)
+                            .unwrap()
+                            .encode_utf8(&mut buf),
                         2,
                     )
-                } else if jis_ptr >= DECODE_TABLE.len() || DECODE_TABLE[jis_ptr] == '�' {
+                } else if jis_ptr as usize >= DECODE_TABLE.len()
+                    || DECODE_TABLE[jis_ptr as usize] == '�'
+                {
                     // Error: correctly formed but undefined code.
                     // WHATWG dictates that if the second byte is ascii, it
                     // remains part of the stream, and thus (in our case) is
@@ -142,11 +148,10 @@ pub fn decode_to_str<'a>(input: &[u8], out_buffer: &'a mut [u8]) -> DecodeResult
                     });
                 } else {
                     // Encode codepoint to utf8.
-                    (
-                        DECODE_TABLE[big5_ptr].encode_utf8(&mut buf),
-                        2,
-                    )
+                    (DECODE_TABLE[jis_ptr as usize].encode_utf8(&mut buf), 2)
                 }
+            } else {
+                break;
             };
 
             // Copy decoded data to output.
@@ -158,14 +163,13 @@ pub fn decode_to_str<'a>(input: &[u8], out_buffer: &'a mut [u8]) -> DecodeResult
             // Update our counters.
             input_i += input_consumed;
             output_i += string.len();
-        } else {
-            break;
         }
     }
 
-    Ok((input_i, unsafe {
-        core::str::from_utf8_unchecked(&out_buffer[..output_i])
-    }))
+    Ok((
+        unsafe { core::str::from_utf8_unchecked(&out_buffer[..output_i]) },
+        input_i,
+    ))
 }
 
 // #[cfg(test)]

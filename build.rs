@@ -12,6 +12,12 @@ fn main() {
         File::create(&Path::new(&out_dir).join("big5_whatwg_tables.rs")).unwrap(),
     ).unwrap();
 
+    // Generate Shift JIS tables.
+    generate_shiftjis_tables(
+        File::open("encoding_tables/index-jis0208.txt").unwrap(),
+        File::create(&Path::new(&out_dir).join("shiftjis_whatwg_tables.rs")).unwrap(),
+    ).unwrap();
+
     // Generate all of the single byte encoding tables and wrapper code.
     {
         generate_ascii_ext_encoding_from_index(
@@ -137,6 +143,8 @@ fn main() {
     }
 }
 
+//---------------------------------------------------------------------------
+
 /// Generates tables for BIG5 encoding conversion.  Input should be a file
 /// with hex-encoded (e.g. 0xA040) BIG5 in a column on the left and
 /// corresponding hex-encoded Unicode scalar values on the right.  Lines
@@ -260,6 +268,123 @@ const DECODE_TABLE: [char; {}] = [
 
     Ok(())
 }
+
+//---------------------------------------------------------------------------
+
+/// Generates tables for Shift JIS encoding conversion.
+fn generate_shiftjis_tables<R: Read, W: Write>(in_file: R, mut out_file: W) -> std::io::Result<()> {
+    // Load table into memory.
+    let table = {
+        let in_file = std::io::BufReader::new(in_file);
+        let mut table = Vec::new();
+        for line in in_file.lines() {
+            let tmp = line.unwrap();
+            let line = tmp.trim();
+            if line.starts_with("#") || line == "" {
+                continue;
+            }
+
+            let elements: Vec<_> = line.split_whitespace().collect();
+            if elements.len() >= 2 {
+                let jis_ptr = elements[0].parse::<u32>().unwrap();
+                let unicode = std::char::from_u32(
+                    u32::from_str_radix(&elements[1][2..], 16).unwrap(),
+                ).unwrap();
+                table.push((jis_ptr, unicode));
+            }
+        }
+        table
+    };
+
+    // Build the decode table.
+    let dec_table = {
+        let mut table = table.clone();
+        table.sort_by_key(|v| v.0);
+        table.dedup_by_key(|v| v.0);
+        let mut i = 0;
+        let mut dec_table: Vec<char> = Vec::new();
+        for (jis_ptr, unicode) in &table {
+            while i < *jis_ptr as usize {
+                dec_table.push('�');
+                i += 1;
+            }
+            dec_table.push(*unicode);
+            i += 1;
+        }
+        dec_table
+    };
+
+    // Build the encode table.
+    let enc_table = {
+        let mut table = table.clone();
+        table.sort_by_key(|v| v.1);
+        table.dedup_by_key(|v| v.1);
+        let mut enc_table: Vec<(char, u32)> = Vec::new();
+        for (jis_ptr, unicode) in &table {
+            enc_table.push((*unicode, *jis_ptr));
+        }
+        enc_table
+    };
+
+    // Write encode table.
+    out_file.write_all(
+        format!(
+            r#"
+const ENCODE_TABLE: [(char, u32); {}] = [
+"#,
+            enc_table.len()
+        ).as_bytes(),
+    )?;
+
+    for (ii, (unicode, jis_ptr)) in enc_table.iter().enumerate() {
+        if ii % 4 == 0 && ii != 0 {
+            out_file.write_all("\n".as_bytes())?;
+        }
+        out_file.write_all(
+            format!(
+                "('\\u{{{:X}}}', 0x{:X}), ",
+                *unicode as u32, *jis_ptr as u32,
+            ).as_bytes(),
+        )?;
+    }
+
+    out_file.write_all(
+        format!(
+            r#"
+];
+"#
+        ).as_bytes(),
+    )?;
+
+    // Write decode table.
+    out_file.write_all(
+        format!(
+            r#"
+const DECODE_TABLE: [char; {}] = [
+"#,
+            dec_table.len()
+        ).as_bytes(),
+    )?;
+
+    for (i, c) in dec_table.iter().enumerate() {
+        if i % 8 == 0 && i != 0 {
+            out_file.write_all("\n".as_bytes())?;
+        }
+        out_file.write_all(format!("'\\u{{{:X}}}', ", *c as u32).as_bytes())?;
+    }
+
+    out_file.write_all(
+        format!(
+            r#"
+];
+"#
+        ).as_bytes(),
+    )?;
+
+    Ok(())
+}
+
+//---------------------------------------------------------------------------
 
 /// Generates tables for single-byte encoding conversion from text indexes in
 /// the WHATWG encoding-standard single-byte index format.
