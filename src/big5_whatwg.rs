@@ -323,14 +323,18 @@ mod tests {
             0xA4, 0xB5, 0x80, 0x61, 0xC7, 0x56, 0xC6, 0xEA, 0xC6, 0xEA, 0xC7, 0x6F, 0xA1, 0x49,
         ]; // "今日はいいよ！" with an error on the second char (invalid sequence)
         let mut buf = [0u8; 4];
-        let error = decode_to_str(&data, &mut buf);
-        assert_eq!(
-            error,
-            Err(DecodeError {
-                error_range: (2, 3),
-                output_bytes_written: 3,
-            })
-        );
+        // Scope to contain borrow.
+        {
+            let error = decode_to_str(&data, &mut buf);
+            assert_eq!(
+                error,
+                Err(DecodeError {
+                    error_range: (2, 3),
+                    output_bytes_written: 3,
+                })
+            );
+        }
+        assert_eq!(&buf[..3], b"\xE4\xBB\x8A");
     }
 
     #[test]
@@ -339,14 +343,18 @@ mod tests {
             0xA4, 0xB5, 0xA4, 0xE9, 0xC7, 0x56, 0x80, 0x61, 0xC6, 0xEA, 0xC7, 0x6F, 0xA1, 0x49,
         ]; // "今日はいいよ！" with an error on the fourth char (invalid sequence)
         let mut buf = [0u8; 64];
-        let error = decode_to_str(&data, &mut buf);
-        assert_eq!(
-            error,
-            Err(DecodeError {
-                error_range: (6, 7),
-                output_bytes_written: 9,
-            })
-        );
+        // Scope to contain borrow.
+        {
+            let error = decode_to_str(&data, &mut buf);
+            assert_eq!(
+                error,
+                Err(DecodeError {
+                    error_range: (6, 7),
+                    output_bytes_written: 9,
+                })
+            );
+        }
+        assert_eq!(&buf[..9], b"\xE4\xBB\x8A\xE6\x97\xA5\xE3\x81\xAF");
     }
 
     #[test]
@@ -420,5 +428,6 @@ mod tests {
                 output_bytes_written: 4,
             })
         );
+        assert_eq!(&buf[..4], &[0xA4, 0xB5, 0xA4, 0xE9]);
     }
 }

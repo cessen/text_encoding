@@ -240,6 +240,51 @@ mod tests {
         correct_decode(b"\xFC\x4B", "\u{9ED1}");
     }
 
+    #[test]
+    fn decode_02() {
+        let data = b"\x8D\xA1\x93\xFA\x82\xCD\x82\xA2\x82\xA2\x82\xE6\x81\x49"; // "今日はいいよ！"
+        let mut buf = [0u8; 2];
+        let (decoded, consumed_count) = decode_to_str(data, &mut buf).unwrap();
+        assert_eq!(consumed_count, 0);
+        assert_eq!(decoded, "");
+    }
+
+    #[test]
+    fn decode_03() {
+        let data = b"\x8D\xA1\x93\xFA\x82\xCD\x82\xA2\x82\xA2\x82\xE6\x81\x49"; // "今日はいいよ！"
+        let mut buf = [0u8; 3];
+        let (decoded, consumed_count) = decode_to_str(data, &mut buf).unwrap();
+        assert_eq!(consumed_count, 2);
+        assert_eq!(decoded, "今");
+    }
+
+    #[test]
+    fn decode_04() {
+        let data = b"\x8D\xA1\x93\xFA\x82\xCD\x82\xA2\x82\xA2\x82\xE6\x81\x49"; // "今日はいいよ！"
+        let mut buf = [0u8; 5];
+        let (decoded, consumed_count) = decode_to_str(data, &mut buf).unwrap();
+        assert_eq!(consumed_count, 2);
+        assert_eq!(decoded, "今");
+    }
+
+    #[test]
+    fn decode_05() {
+        let data = b"\x8D\xA1\x81\x3F\x82\xCD\x82\xA2\x82\xA2\x82\xE6\x81\x49"; // "今日はいいよ！" with an error on the second char (invalid sequence)
+        let mut buf = [0u8; 3];
+        let (decoded, consumed_count) = decode_to_str(data, &mut buf).unwrap();
+        assert_eq!(consumed_count, 2);
+        assert_eq!(decoded, "今");
+    }
+
+    #[test]
+    fn decode_06() {
+        let data = b"\x8D\xA1\x93\xFA\x61\xD6\x82\xCD\x62"; // "今日aﾖはb"
+        let mut buf = [0u8; 14];
+        let (encoded, consumed_count) = decode_to_str(data, &mut buf).unwrap();
+        assert_eq!(consumed_count, 9);
+        assert_eq!(encoded, "今日aﾖはb");
+    }
+
     // Adapted from tests in encoding_rs:
     // https://crates.io/crates/encoding_rs
     #[test]
@@ -254,6 +299,56 @@ mod tests {
         error_decode(b"\xEE\xFD", (0, 2), 0);
         error_decode(b"\xFA\x3F", (0, 1), 0);
         error_decode(b"\xFC\x4C", (0, 1), 0);
+    }
+
+    #[test]
+    fn decode_error_02() {
+        let data = b"\x81\x3F\x93\xFA\x82\xCD\x82\xA2\x82\xA2\x82\xE6\x81\x49"; // "今日はいいよ！" with an error on the first char (invalid sequence)
+        let mut buf = [0u8; 2];
+        let error = decode_to_str(data, &mut buf);
+        assert_eq!(
+            error,
+            Err(DecodeError {
+                error_range: (0, 1),
+                output_bytes_written: 0,
+            })
+        );
+    }
+
+    #[test]
+    fn decode_error_03() {
+        let data = b"\x8D\xA1\x81\x3F\x82\xCD\x82\xA2\x82\xA2\x82\xE6\x81\x49"; // "今日はいいよ！" with an error on the second char (invalid sequence)
+        let mut buf = [0u8; 4];
+        // Scope to contain borrow.
+        {
+            let error = decode_to_str(data, &mut buf);
+            assert_eq!(
+                error,
+                Err(DecodeError {
+                    error_range: (2, 3),
+                    output_bytes_written: 3,
+                })
+            );
+        }
+        assert_eq!(&buf[..3], b"\xE4\xBB\x8A");
+    }
+
+    #[test]
+    fn decode_error_04() {
+        let data = b"\x8D\xA1\x93\xFA\x82\xCD\x81\x3F\x82\xA2\x82\xE6\x81\x49"; // "今日はいいよ！" with an error on the fourth char (invalid sequence)
+        let mut buf = [0u8; 64];
+        // Scope to contain borrow.
+        {
+            let error = decode_to_str(data, &mut buf);
+            assert_eq!(
+                error,
+                Err(DecodeError {
+                    error_range: (6, 7),
+                    output_bytes_written: 9,
+                })
+            );
+        }
+        assert_eq!(&buf[..9], b"\xE4\xBB\x8A\xE6\x97\xA5\xE3\x81\xAF");
     }
 
     // Adapted from tests in encoding_rs:
@@ -290,5 +385,79 @@ mod tests {
         // correct_encode("\u{FF02}", b"\xFA\x57");
         // correct_encode("\u{2170}", b"\xFA\x40");
         // correct_encode("\u{9ED1}", b"\xFC\x4B");
+    }
+
+    #[test]
+    fn encode_02() {
+        let text = "今日はいいよ！";
+        let mut buf = [0u8; 1];
+        let (encoded, consumed_count) = encode_from_str(text, &mut buf).unwrap();
+        assert_eq!(consumed_count, 0);
+        assert_eq!(encoded, &[]);
+    }
+
+    #[test]
+    fn encode_03() {
+        let text = "今日はいいよ！";
+        let mut buf = [0u8; 2];
+        let (encoded, consumed_count) = encode_from_str(text, &mut buf).unwrap();
+        assert_eq!(consumed_count, 3);
+        assert_eq!(encoded, b"\x8D\xA1");
+    }
+
+    #[test]
+    fn encode_04() {
+        let text = "今日はいいよ！";
+        let mut buf = [0u8; 3];
+        let (encoded, consumed_count) = encode_from_str(text, &mut buf).unwrap();
+        assert_eq!(consumed_count, 3);
+        assert_eq!(encoded, b"\x8D\xA1");
+    }
+
+    #[test]
+    fn encode_05() {
+        let text = "今日aﾖはbいいよ！";
+        let mut buf = [0u8; 9];
+        let (encoded, consumed_count) = encode_from_str(text, &mut buf).unwrap();
+        assert_eq!(consumed_count, 14);
+        assert_eq!(encoded, b"\x8D\xA1\x93\xFA\x61\xD6\x82\xCD\x62");
+    }
+
+    #[test]
+    fn encode_06() {
+        let text = "今日😺はいいよ！";
+        let mut buf = [0u8; 4];
+        let (encoded, consumed_count) = encode_from_str(text, &mut buf).unwrap();
+        assert_eq!(consumed_count, 6);
+        assert_eq!(encoded, b"\x8D\xA1\x93\xFA");
+    }
+
+    #[test]
+    fn encode_error_01() {
+        let text = "😺今日はいいよ！";
+        let mut buf = [0u8; 64];
+        assert_eq!(
+            encode_from_str(text, &mut buf),
+            Err(EncodeError {
+                character: '😺',
+                error_range: (0, 4),
+                output_bytes_written: 0,
+            })
+        );
+    }
+
+    #[test]
+    fn encode_error_02() {
+        let text = "今日😺はいいよ！";
+        let mut buf = [0u8; 64];
+        assert_eq!(
+            encode_from_str(text, &mut buf),
+            Err(EncodeError {
+                character: '😺',
+                error_range: (6, 10),
+                output_bytes_written: 4,
+            })
+        );
+        assert_eq!(&buf[..4], b"\x8D\xA1\x93\xFA");
     }
 }
