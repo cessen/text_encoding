@@ -442,12 +442,12 @@ fn generate_ascii_ext_encoding_from_index<R: Read, W: Write>(
             r#"
 use {{DecodeResult, EncodeResult}};
 
-pub fn encode_from_str<'a>(input: &str, out_buffer: &'a mut [u8]) -> EncodeResult<'a> {{
-    super::ascii_ext_encode_from_str(&ENCODE_TABLE, input, out_buffer)
+pub fn encode_from_str<'a>(input: &str, out_buffer: &'a mut [u8], is_end: bool) -> EncodeResult<'a> {{
+    super::ascii_ext_encode_from_str(&ENCODE_TABLE, input, out_buffer, is_end)
 }}
 
-pub fn decode_to_str<'a>(input: &[u8], out_buffer: &'a mut [u8]) -> DecodeResult<'a> {{
-    super::ascii_ext_decode_to_str(&DECODE_TABLE, input, out_buffer)
+pub fn decode_to_str<'a>(input: &[u8], out_buffer: &'a mut [u8], is_end: bool) -> DecodeResult<'a> {{
+    super::ascii_ext_decode_to_str(&DECODE_TABLE, input, out_buffer, is_end)
 }}
 "#
         ).as_bytes(),

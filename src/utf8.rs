@@ -8,13 +8,19 @@
 use core;
 use {DecodeError, DecodeResult, EncodeResult};
 
-pub fn encode_from_str<'a>(input: &str, out_buffer: &'a mut [u8]) -> EncodeResult<'a> {
+pub fn encode_from_str<'a>(
+    input: &str,
+    out_buffer: &'a mut [u8],
+    is_end: bool,
+) -> EncodeResult<'a> {
+    let _ = is_end; // Unused for encoding to utf8, so silence warning.
+
     let cl = copy_len(input.as_bytes(), out_buffer.len());
     out_buffer[..cl].copy_from_slice(input[..cl].as_bytes());
     Ok((&out_buffer[..cl], cl))
 }
 
-pub fn decode_to_str<'a>(input: &[u8], out_buffer: &'a mut [u8]) -> DecodeResult<'a> {
+pub fn decode_to_str<'a>(input: &[u8], out_buffer: &'a mut [u8], is_end: bool) -> DecodeResult<'a> {
     // Find how much of the data is valid utf8.
     let valid_up_to = match core::str::from_utf8(input) {
         Ok(text) => text.len(),
@@ -29,8 +35,7 @@ pub fn decode_to_str<'a>(input: &[u8], out_buffer: &'a mut [u8]) -> DecodeResult
     if bytes_copied < out_buffer.len() && bytes_copied == valid_up_to && valid_up_to < input.len() {
         let trailing_bytes = input.len() - valid_up_to;
         let byte = input[valid_up_to];
-        // First we check if we're truncated.  If we are, then don't error
-        // yet, because we want to provide the full byte range of the error.
+        // First we check if we're truncated.  If not, then it's an error.
         let is_truncated = ((byte & 0b11100000) == 0b11000000 && trailing_bytes < 2)
             || ((byte & 0b11110000) == 0b11100000 && trailing_bytes < 3)
             || ((byte & 0b11111000) == 0b11110000 && trailing_bytes < 4);
@@ -46,6 +51,12 @@ pub fn decode_to_str<'a>(input: &[u8], out_buffer: &'a mut [u8]) -> DecodeResult
             // Return the error.
             return Err(DecodeError {
                 error_range: (valid_up_to, i),
+                output_bytes_written: bytes_copied,
+            });
+        } else if is_end {
+            // If we're truncated _and_ at end-of-input, that's also an error.
+            return Err(DecodeError {
+                error_range: (valid_up_to, input.len()),
                 output_bytes_written: bytes_copied,
             });
         }
@@ -86,7 +97,7 @@ mod tests {
     fn encode_01() {
         let text = "こんにちは！";
         let mut buf = [0u8; 2];
-        let (encoded, consumed_count) = encode_from_str(text, &mut buf).unwrap();
+        let (encoded, consumed_count) = encode_from_str(text, &mut buf, true).unwrap();
         assert_eq!(consumed_count, 0);
         assert_eq!(encoded, &[]);
     }
@@ -95,7 +106,7 @@ mod tests {
     fn encode_02() {
         let text = "こんにちは！";
         let mut buf = [0u8; 3];
-        let (encoded, consumed_count) = encode_from_str(text, &mut buf).unwrap();
+        let (encoded, consumed_count) = encode_from_str(text, &mut buf, true).unwrap();
         assert_eq!(consumed_count, 3);
         assert_eq!(encoded, &[0xE3, 0x81, 0x93]);
     }
@@ -104,7 +115,7 @@ mod tests {
     fn encode_03() {
         let text = "こんにちは！";
         let mut buf = [0u8; 5];
-        let (encoded, consumed_count) = encode_from_str(text, &mut buf).unwrap();
+        let (encoded, consumed_count) = encode_from_str(text, &mut buf, true).unwrap();
         assert_eq!(consumed_count, 3);
         assert_eq!(encoded, &[0xE3, 0x81, 0x93]);
     }
@@ -116,7 +127,7 @@ mod tests {
             0xAF, 0xEF, 0xBC, 0x81,
         ]; // "こんにちは！"
         let mut buf = [0u8; 2];
-        let (decoded, consumed_count) = decode_to_str(&data, &mut buf).unwrap();
+        let (decoded, consumed_count) = decode_to_str(&data, &mut buf, true).unwrap();
         assert_eq!(consumed_count, 0);
         assert_eq!(decoded, "");
     }
@@ -128,7 +139,7 @@ mod tests {
             0xAF, 0xEF, 0xBC, 0x81,
         ]; // "こんにちは！"
         let mut buf = [0u8; 3];
-        let (decoded, consumed_count) = decode_to_str(&data, &mut buf).unwrap();
+        let (decoded, consumed_count) = decode_to_str(&data, &mut buf, true).unwrap();
         assert_eq!(consumed_count, 3);
         assert_eq!(decoded, "こ");
     }
@@ -140,7 +151,7 @@ mod tests {
             0xAF, 0xEF, 0xBC, 0x81,
         ]; // "こんにちは！"
         let mut buf = [0u8; 5];
-        let (decoded, consumed_count) = decode_to_str(&data, &mut buf).unwrap();
+        let (decoded, consumed_count) = decode_to_str(&data, &mut buf, true).unwrap();
         assert_eq!(consumed_count, 3);
         assert_eq!(decoded, "こ");
     }
@@ -152,7 +163,7 @@ mod tests {
             0xAF, 0xEF, 0xBC,
         ]; // "こんにちは！" with last byte chopped off.
         let mut buf = [0u8; 64];
-        let (decoded, consumed_count) = decode_to_str(&data, &mut buf).unwrap();
+        let (decoded, consumed_count) = decode_to_str(&data, &mut buf, false).unwrap();
         assert_eq!(consumed_count, 15);
         assert_eq!(decoded, "こんにちは");
     }
@@ -164,7 +175,7 @@ mod tests {
             0xAF, 0xEF,
         ]; // "こんにちは！" with last 2 bytes chopped off.
         let mut buf = [0u8; 64];
-        let (decoded, consumed_count) = decode_to_str(&data, &mut buf).unwrap();
+        let (decoded, consumed_count) = decode_to_str(&data, &mut buf, false).unwrap();
         assert_eq!(consumed_count, 15);
         assert_eq!(decoded, "こんにちは");
     }
@@ -176,7 +187,7 @@ mod tests {
             0x81, 0xAF, 0xEF, 0xBC, 0x81,
         ]; // "こんにちは！" with an error on the first char (continuing code unit).
         let mut buf = [0u8; 2];
-        let error = decode_to_str(&data, &mut buf);
+        let error = decode_to_str(&data, &mut buf, true);
         assert_eq!(
             error,
             Err(DecodeError {
@@ -193,7 +204,7 @@ mod tests {
             0xEF, 0xBC, 0x81,
         ]; // "こんにちは！" with an error on the first code point (too few continuing code units).
         let mut buf = [0u8; 2];
-        let error = decode_to_str(&data, &mut buf);
+        let error = decode_to_str(&data, &mut buf, true);
         assert_eq!(
             error,
             Err(DecodeError {
@@ -210,7 +221,7 @@ mod tests {
             0x81, 0xAF, 0xEF, 0xBC, 0x81,
         ]; // "こんにちは！" with an error on the second code point (continuing code unit).
         let mut buf = [0u8; 64];
-        let error = decode_to_str(&data, &mut buf);
+        let error = decode_to_str(&data, &mut buf, true);
         assert_eq!(
             error,
             Err(DecodeError {
@@ -227,7 +238,7 @@ mod tests {
             0xA1, 0xE3, 0x81, 0xAF, 0xEF, 0xBC, 0x81,
         ]; // "こんにちは！" with an error on the second code point (lots of continuing code units).
         let mut buf = [0u8; 64];
-        let error = decode_to_str(&data, &mut buf);
+        let error = decode_to_str(&data, &mut buf, true);
         assert_eq!(
             error,
             Err(DecodeError {
@@ -244,7 +255,7 @@ mod tests {
             0xA1, 0xE3, 0x81, 0xAF, 0xEF, 0xBC, 0x81,
         ]; // "こんにちは！" with an error on the second code point (invalid bit pattern).
         let mut buf = [0u8; 64];
-        let error = decode_to_str(&data, &mut buf);
+        let error = decode_to_str(&data, &mut buf, true);
         assert_eq!(
             error,
             Err(DecodeError {
@@ -261,7 +272,7 @@ mod tests {
             0xAF, 0xEF, 0xBC, 0x81,
         ]; // "こんにちは！" with an error on the second code point (beginning of surrogate range).
         let mut buf = [0u8; 64];
-        let error = decode_to_str(&data, &mut buf);
+        let error = decode_to_str(&data, &mut buf, true);
         assert_eq!(
             error,
             Err(DecodeError {
@@ -278,7 +289,7 @@ mod tests {
             0xAF, 0xEF, 0xBC, 0x81,
         ]; // "こんにちは！" with an error on the second code point (end of surrogate range).
         let mut buf = [0u8; 64];
-        let error = decode_to_str(&data, &mut buf);
+        let error = decode_to_str(&data, &mut buf, true);
         assert_eq!(
             error,
             Err(DecodeError {
@@ -295,7 +306,7 @@ mod tests {
             0x81, 0xAF, 0xEF, 0xBC, 0x81,
         ]; // "こんにちは！" with an error on the second code point (out of unicode range).
         let mut buf = [0u8; 64];
-        let error = decode_to_str(&data, &mut buf);
+        let error = decode_to_str(&data, &mut buf, true);
         assert_eq!(
             error,
             Err(DecodeError {
@@ -312,7 +323,7 @@ mod tests {
             0xEF, 0xBC, 0x81,
         ]; // "こんにちは！" with an error on the second code point (byte == 0xC0).
         let mut buf = [0u8; 64];
-        let error = decode_to_str(&data, &mut buf);
+        let error = decode_to_str(&data, &mut buf, true);
         assert_eq!(
             error,
             Err(DecodeError {
@@ -329,12 +340,46 @@ mod tests {
             0xEF, 0xBC, 0x81,
         ]; // "こんにちは！" with an error on the second code point (byte == 0xC1).
         let mut buf = [0u8; 64];
-        let error = decode_to_str(&data, &mut buf);
+        let error = decode_to_str(&data, &mut buf, true);
         assert_eq!(
             error,
             Err(DecodeError {
                 error_range: (3, 5),
                 output_bytes_written: 3,
+            })
+        );
+    }
+
+    #[test]
+    fn decode_error_11() {
+        let data = [
+            0xE3, 0x81, 0x93, 0xE3, 0x82, 0x93, 0xE3, 0x81, 0xAB, 0xE3, 0x81, 0xA1, 0xE3, 0x81,
+            0xAF, 0xEF, 0xBC,
+        ]; // "こんにちは！" with last byte chopped off.
+        let mut buf = [0u8; 64];
+        let error = decode_to_str(&data, &mut buf, true);
+        assert_eq!(
+            error,
+            Err(DecodeError {
+                error_range: (15, 17),
+                output_bytes_written: 15,
+            })
+        );
+    }
+
+    #[test]
+    fn decode_error_12() {
+        let data = [
+            0xE3, 0x81, 0x93, 0xE3, 0x82, 0x93, 0xE3, 0x81, 0xAB, 0xE3, 0x81, 0xA1, 0xE3, 0x81,
+            0xAF, 0xEF,
+        ]; // "こんにちは！" with last 2 bytes chopped off.
+        let mut buf = [0u8; 64];
+        let error = decode_to_str(&data, &mut buf, true);
+        assert_eq!(
+            error,
+            Err(DecodeError {
+                error_range: (15, 16),
+                output_bytes_written: 15,
             })
         );
     }
