@@ -18,7 +18,6 @@ def bytes_to_index(lead, tail):
     tail_offset = 0x40 if tail < 0x7F else 0x41
     return (lead - lead_offset) * 188 + tail - tail_offset
 
-    
 
 def deduped_table(table):
     """ De-deplicate the codepoint entries in the from-disk table according to
@@ -103,7 +102,7 @@ def generate_shiftjis_test_data(in_path, dec_in_path, dec_out_path, enc_in_path,
     # Generate decoding test files.
     decode_in_file = open(dec_in_path, "wb")
     decode_out_file = open(dec_out_path, "wb")
-    for ascii_byte in range(1, 128):
+    for ascii_byte in range(1, 129):
         # In
         decode_in_file.write(bytes([ascii_byte]))
         decode_in_file.write(bytes("\n", 'utf-8'))
@@ -154,4 +153,4 @@ if __name__ == "__main__":
         test_root + "/shiftjis_whatwg_test_decode_out.txt",
         test_root + "/shiftjis_whatwg_test_encode_in.txt",
         test_root + "/shiftjis_whatwg_test_encode_out.txt",
-    )        
+    )

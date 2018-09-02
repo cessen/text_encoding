@@ -102,11 +102,21 @@ pub fn decode_to_str<'a>(input: &[u8], out_buffer: &'a mut [u8], is_end: bool) -
     while let Some(&byte_1) = itr.next() {
         if output_i >= out_buffer.len() {
             break;
-        } else if byte_1 <= 128 {
+        } else if byte_1 <= 127 {
             // Ascii
             out_buffer[output_i] = byte_1;
             output_i += 1;
             input_i += 1;
+        } else if byte_1 == 128 {
+            // Edge-case, close to ascii.
+            if output_i + 1 >= out_buffer.len() {
+                break;
+            } else {
+                out_buffer[output_i] = 0xC2;
+                out_buffer[output_i + 1] = 0x80;
+                output_i += 2;
+                input_i += 1;
+            }
         } else {
             // Get our decoded data, either from the table or by special handling.
             let (string, input_consumed) = if byte_1 >= 0xA1 && byte_1 <= 0xDF {
