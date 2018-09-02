@@ -156,6 +156,19 @@ def generate_big5_test_data(in_path, dec_in_path, dec_out_path, enc_in_path, enc
         # Out
         encode_out_file.write(bytes(index_to_bytes(index)))
         encode_out_file.write(bytes("\n", 'utf-8'))
+    for (index, codepoints) in [
+        (1133, (0xCA, 0x304)),
+        (1135, (0xCA, 0x30C)),
+        (1164, (0xEA, 0x304)),
+        (1166, (0xEA, 0x30C)),
+    ]:
+        # In
+        encode_in_file.write(chr(codepoints[0]).encode('utf-8'))
+        encode_in_file.write(chr(codepoints[1]).encode('utf-8'))
+        encode_in_file.write(bytes("\n", 'utf-8'))
+        # Out
+        encode_out_file.write(bytes(index_to_bytes(index)))
+        encode_out_file.write(bytes("\n", 'utf-8'))
 
 
 if __name__ == "__main__":

@@ -16,7 +16,8 @@ pub fn encode_from_str<'a>(
     // Do the encode.
     let mut input_i = 0;
     let mut output_i = 0;
-    for (offset, c) in input.char_indices() {
+    let mut itr = input.char_indices();
+    while let Some((offset, c)) = itr.next() {
         let mut code = c as u32;
         if output_i >= out_buffer.len() {
             break;
@@ -27,6 +28,24 @@ pub fn encode_from_str<'a>(
             input_i = offset + 1;
         } else if let Ok(ptr_i) = ENCODE_TABLE.binary_search_by_key(&c, |x| x.0) {
             if (output_i + 1) < out_buffer.len() {
+                // Handle graphemes.
+                if code == 0xCA || code == 0xEA {
+                    if let Some((offset2, c2)) = itr.clone().next() {
+                        let code2 = c2 as u32;
+                        if let Some(bytes) = map_grapheme(code, code2) {
+                            itr.next();
+                            out_buffer[output_i] = bytes[0];
+                            out_buffer[output_i + 1] = bytes[1];
+                            output_i += 2;
+                            input_i = offset2 + 1;
+                            continue;
+                        }
+                    } else if !is_end {
+                        break;
+                    }
+                }
+
+                // Common case, fetch from table.
                 let big5_bytes = ENCODE_TABLE[ptr_i].1;
                 out_buffer[output_i] = big5_bytes[0];
                 out_buffer[output_i + 1] = big5_bytes[1];
@@ -54,6 +73,16 @@ pub fn encode_from_str<'a>(
     }
 
     Ok((&out_buffer[..output_i], input_i))
+}
+
+fn map_grapheme(a: u32, b: u32) -> Option<[u8; 2]> {
+    match (a, b) {
+        (0xCA, 0x304) => Some([0x88, 0x62]),
+        (0xCA, 0x30C) => Some([0x88, 0x64]),
+        (0xEA, 0x304) => Some([0x88, 0xA3]),
+        (0xEA, 0x30C) => Some([0x88, 0xA5]),
+        _ => None,
+    }
 }
 
 pub fn decode_to_str<'a>(input: &[u8], out_buffer: &'a mut [u8], is_end: bool) -> DecodeResult<'a> {
@@ -431,7 +460,7 @@ mod tests {
     }
 
     #[test]
-    fn encode_05() {
+    fn encode_04() {
         let text = "今日aはbいいよ！";
         let mut buf = [0u8; 8];
         let (encoded, consumed_count) = encode_from_str(text, &mut buf, true).unwrap();
@@ -440,12 +469,66 @@ mod tests {
     }
 
     #[test]
-    fn encode_04() {
+    fn encode_05() {
         let text = "今日😺はいいよ！";
         let mut buf = [0u8; 4];
         let (encoded, consumed_count) = encode_from_str(text, &mut buf, true).unwrap();
         assert_eq!(consumed_count, 6);
         assert_eq!(encoded, &[0xA4, 0xB5, 0xA4, 0xE9]);
+    }
+
+    #[test]
+    fn encode_06() {
+        let text = "\u{00CA}\u{0304}";
+        let mut buf = [0u8; 64];
+        let (encoded, consumed_count) = encode_from_str(text, &mut buf, true).unwrap();
+        assert_eq!(consumed_count, 4);
+        assert_eq!(encoded, &[0x88, 0x62]);
+    }
+
+    #[test]
+    fn encode_07() {
+        let text = "\u{00CA}\u{0304}";
+        let mut buf = [0u8; 64];
+        let (encoded, consumed_count) = encode_from_str(text, &mut buf, false).unwrap();
+        assert_eq!(consumed_count, 4);
+        assert_eq!(encoded, &[0x88, 0x62]);
+    }
+
+    #[test]
+    fn encode_08() {
+        let text = "\u{00CA}";
+        let mut buf = [0u8; 64];
+        let (encoded, consumed_count) = encode_from_str(text, &mut buf, true).unwrap();
+        assert_eq!(consumed_count, 2);
+        assert_eq!(encoded, &[0x88, 0x66]);
+    }
+
+    #[test]
+    fn encode_09() {
+        let text = "\u{00CA}";
+        let mut buf = [0u8; 64];
+        let (encoded, consumed_count) = encode_from_str(text, &mut buf, false).unwrap();
+        assert_eq!(consumed_count, 0);
+        assert_eq!(encoded, &[]);
+    }
+
+    #[test]
+    fn encode_10() {
+        let text = "\u{00CA}よ";
+        let mut buf = [0u8; 64];
+        let (encoded, consumed_count) = encode_from_str(text, &mut buf, true).unwrap();
+        assert_eq!(consumed_count, 5);
+        assert_eq!(encoded, &[0x88, 0x66, 0xc7, 0x6f]);
+    }
+
+    #[test]
+    fn encode_11() {
+        let text = "\u{00CA}よ";
+        let mut buf = [0u8; 64];
+        let (encoded, consumed_count) = encode_from_str(text, &mut buf, false).unwrap();
+        assert_eq!(consumed_count, 5);
+        assert_eq!(encoded, &[0x88, 0x66, 0xc7, 0x6f]);
     }
 
     #[test]
