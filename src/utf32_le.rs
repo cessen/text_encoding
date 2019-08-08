@@ -59,9 +59,9 @@ pub fn decode_to_str<'a>(input: &[u8], out_buffer: &'a mut [u8], is_end: bool) -
         }
 
         // Do the decode.
-        if let Some(code) = core::char::from_u32(u32::from_le_bytes([
-            bytes[0], bytes[1], bytes[2], bytes[3],
-        ])) {
+        if let Some(code) =
+            core::char::from_u32(u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
+        {
             // Encode to utf8.
             let mut buf = [0u8; 4];
             let s = code.encode_utf8(&mut buf);

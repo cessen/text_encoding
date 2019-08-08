@@ -18,7 +18,8 @@ fn big5_whatwg_encode() {
         std::str::from_utf8(WHATWG_ENCODE_UTF8_DATA).unwrap(),
         &mut buf,
         true,
-    ).unwrap();
+    )
+    .unwrap();
 
     assert_eq!(WHATWG_ENCODE_BIG5_DATA, big5);
 }
