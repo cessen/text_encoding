@@ -1,7 +1,6 @@
 //! Little-endian UTF-16.
 
 use core;
-use utils::{from_little_endian_u16, to_little_endian_u16};
 use {DecodeError, DecodeResult, EncodeResult};
 
 pub fn encode_from_str<'a>(
@@ -19,7 +18,7 @@ pub fn encode_from_str<'a>(
         if code <= 0xFFFF {
             // One code unit
             if (output_i + 1) < out_buffer.len() {
-                let val = to_little_endian_u16(code as u16);
+                let val = (code as u16).to_le_bytes();
                 out_buffer[output_i] = val[0];
                 out_buffer[output_i + 1] = val[1];
                 output_i += 2;
@@ -30,8 +29,8 @@ pub fn encode_from_str<'a>(
         } else if (output_i + 3) < out_buffer.len() {
             // Two code units
             code -= 0x10000;
-            let first = to_little_endian_u16(0xD800 | ((code >> 10) as u16));
-            let second = to_little_endian_u16(0xDC00 | ((code as u16) & 0x3FF));
+            let first = (0xD800 | ((code >> 10) as u16)).to_le_bytes();
+            let second = (0xDC00 | ((code as u16) & 0x3FF)).to_le_bytes();
             out_buffer[output_i] = first[0];
             out_buffer[output_i + 1] = first[1];
             out_buffer[output_i + 2] = second[0];
@@ -76,7 +75,7 @@ pub fn decode_to_str<'a>(input: &[u8], out_buffer: &'a mut [u8], is_end: bool) -
 
         // Decode to scalar value.
         let code = {
-            let code_1 = from_little_endian_u16([bytes[0], bytes[1]]);
+            let code_1 = u16::from_le_bytes([bytes[0], bytes[1]]);
             if code_1 < 0xD800 || code_1 > 0xDFFF {
                 // Single code unit.
                 unsafe { core::char::from_u32_unchecked(code_1 as u32) }
@@ -102,7 +101,7 @@ pub fn decode_to_str<'a>(input: &[u8], out_buffer: &'a mut [u8], is_end: bool) -
                     }
                 }
                 let bytes_2 = itr.next().unwrap();
-                let code_2 = from_little_endian_u16([bytes_2[0], bytes_2[1]]);
+                let code_2 = u16::from_le_bytes([bytes_2[0], bytes_2[1]]);
                 if (code_2 & 0xFC00) != 0xDC00 {
                     // Error: second half is not valid surrogate.
                     return Err(DecodeError {

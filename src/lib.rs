@@ -29,7 +29,6 @@ pub mod utf16_le;
 pub mod utf32_be;
 pub mod utf32_le;
 pub mod utf8;
-mod utils;
 
 /// Result type for encoding text from a `&str` to a target encoding.
 ///
