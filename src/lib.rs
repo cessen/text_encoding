@@ -277,9 +277,10 @@ pub struct DecodeError {
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum DecodeErrorCause {
-    /// Invalid text data was encountered.
+    /// Encountered invalid text data.
     InvalidData,
 
-    /// Valid text data for which a reasonable Unicode conversion is unknown.
+    /// Encountered valid text data for which a reasonable Unicode conversion
+    /// is unknown.
     UnknownConversion,
 }
