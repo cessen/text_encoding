@@ -18,7 +18,7 @@ proptest! {
         // Encode to utf8
         let mut tmp = &text[..];
         while !tmp.is_empty() {
-            if let Ok((encoded, n)) = utf8::encode_from_str(tmp, &mut buf, true) {
+            if let Ok((encoded, n)) = utf8::encode_from_str(tmp, &mut buf) {
                 tmp = &tmp[n..];
                 utf8_encoded.extend_from_slice(encoded);
             } else {
@@ -56,8 +56,7 @@ proptest! {
         // Attempt to encode.  Should always succeed, but the important thing
         // is that it should never panic.
         let mut buf = vec![0u8; 4096];
-        let _ = utf8::encode_from_str(text, &mut buf, false);
-        let _ = utf8::encode_from_str(text, &mut buf, true);
+        let _ = utf8::encode_from_str(text, &mut buf);
     }
 
     #[test]
@@ -69,7 +68,7 @@ proptest! {
         // Encode to utf16 big endian
         let mut tmp = &text[..];
         while !tmp.is_empty() {
-            if let Ok((encoded, n)) = utf16_be::encode_from_str(tmp, &mut buf, true) {
+            if let Ok((encoded, n)) = utf16_be::encode_from_str(tmp, &mut buf) {
                 tmp = &tmp[n..];
                 utf16.extend_from_slice(encoded);
             } else {
@@ -105,8 +104,7 @@ proptest! {
         // Attempt to encode.  Should always succeed, but the important thing
         // is that it should never panic.
         let mut buf = vec![0u8; 4096];
-        let _ = utf16_be::encode_from_str(text, &mut buf, false);
-        let _ = utf16_be::encode_from_str(text, &mut buf, true);
+        let _ = utf16_be::encode_from_str(text, &mut buf);
     }
 
     #[test]
@@ -118,7 +116,7 @@ proptest! {
         // Encode to utf16 little endian
         let mut tmp = &text[..];
         while !tmp.is_empty() {
-            if let Ok((encoded, n)) = utf16_le::encode_from_str(tmp, &mut buf, true) {
+            if let Ok((encoded, n)) = utf16_le::encode_from_str(tmp, &mut buf) {
                 tmp = &tmp[n..];
                 utf16.extend_from_slice(encoded);
             } else {
@@ -154,8 +152,7 @@ proptest! {
         // Attempt to encode.  Should always succeed, but the important thing
         // is that it should never panic.
         let mut buf = vec![0u8; 4096];
-        let _ = utf16_le::encode_from_str(text, &mut buf, false);
-        let _ = utf16_le::encode_from_str(text, &mut buf, true);
+        let _ = utf16_le::encode_from_str(text, &mut buf);
     }
 
     #[test]
@@ -167,7 +164,7 @@ proptest! {
         // Encode to utf32 big endian
         let mut tmp = &text[..];
         while !tmp.is_empty() {
-            if let Ok((encoded, n)) = utf32_be::encode_from_str(tmp, &mut buf, true) {
+            if let Ok((encoded, n)) = utf32_be::encode_from_str(tmp, &mut buf) {
                 tmp = &tmp[n..];
                 utf32.extend_from_slice(encoded);
             } else {
@@ -203,8 +200,7 @@ proptest! {
         // Attempt to encode.  Should always succeed, but the important thing
         // is that it should never panic.
         let mut buf = vec![0u8; 4096];
-        let _ = utf32_be::encode_from_str(text, &mut buf, false);
-        let _ = utf32_be::encode_from_str(text, &mut buf, true);
+        let _ = utf32_be::encode_from_str(text, &mut buf);
     }
 
     #[test]
@@ -216,7 +212,7 @@ proptest! {
         // Encode to utf32 little endian
         let mut tmp = &text[..];
         while !tmp.is_empty() {
-            if let Ok((encoded, n)) = utf32_le::encode_from_str(tmp, &mut buf, true) {
+            if let Ok((encoded, n)) = utf32_le::encode_from_str(tmp, &mut buf) {
                 tmp = &tmp[n..];
                 utf32.extend_from_slice(encoded);
             } else {
@@ -252,8 +248,7 @@ proptest! {
         // Attempt to encode.  Should always succeed, but the important thing
         // is that it should never panic.
         let mut buf = vec![0u8; 4096];
-        let _ = utf32_le::encode_from_str(text, &mut buf, false);
-        let _ = utf32_le::encode_from_str(text, &mut buf, true);
+        let _ = utf32_le::encode_from_str(text, &mut buf);
     }
 
     #[test]

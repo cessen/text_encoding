@@ -8,13 +8,7 @@
 use core;
 use {DecodeError, DecodeResult, EncodeResult};
 
-pub fn encode_from_str<'a>(
-    input: &str,
-    out_buffer: &'a mut [u8],
-    is_end: bool,
-) -> EncodeResult<'a> {
-    let _ = is_end; // Unused for encoding to utf8, so silence warning.
-
+pub fn encode_from_str<'a>(input: &str, out_buffer: &'a mut [u8]) -> EncodeResult<'a> {
     let cl = copy_len(input.as_bytes(), out_buffer.len());
     out_buffer[..cl].copy_from_slice(input[..cl].as_bytes());
     Ok((&out_buffer[..cl], cl))
@@ -97,7 +91,7 @@ mod tests {
     fn encode_01() {
         let text = "こんにちは！";
         let mut buf = [0u8; 2];
-        let (encoded, consumed_count) = encode_from_str(text, &mut buf, true).unwrap();
+        let (encoded, consumed_count) = encode_from_str(text, &mut buf).unwrap();
         assert_eq!(consumed_count, 0);
         assert_eq!(encoded, &[]);
     }
@@ -106,7 +100,7 @@ mod tests {
     fn encode_02() {
         let text = "こんにちは！";
         let mut buf = [0u8; 3];
-        let (encoded, consumed_count) = encode_from_str(text, &mut buf, true).unwrap();
+        let (encoded, consumed_count) = encode_from_str(text, &mut buf).unwrap();
         assert_eq!(consumed_count, 3);
         assert_eq!(encoded, &[0xE3, 0x81, 0x93]);
     }
@@ -115,7 +109,7 @@ mod tests {
     fn encode_03() {
         let text = "こんにちは！";
         let mut buf = [0u8; 5];
-        let (encoded, consumed_count) = encode_from_str(text, &mut buf, true).unwrap();
+        let (encoded, consumed_count) = encode_from_str(text, &mut buf).unwrap();
         assert_eq!(consumed_count, 3);
         assert_eq!(encoded, &[0xE3, 0x81, 0x93]);
     }

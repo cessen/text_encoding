@@ -69,11 +69,11 @@ pub fn encode_from_str<'a>(
     is_end: bool,
 ) -> EncodeResult<'a> {
     match output_encoding {
-        Encoding::Utf8 => utf8::encode_from_str(input, output, is_end),
-        Encoding::Utf16BE => utf16_be::encode_from_str(input, output, is_end),
-        Encoding::Utf16LE => utf16_le::encode_from_str(input, output, is_end),
-        Encoding::Utf32BE => utf32_be::encode_from_str(input, output, is_end),
-        Encoding::Utf32LE => utf32_le::encode_from_str(input, output, is_end),
+        Encoding::Utf8 => utf8::encode_from_str(input, output),
+        Encoding::Utf16BE => utf16_be::encode_from_str(input, output),
+        Encoding::Utf16LE => utf16_le::encode_from_str(input, output),
+        Encoding::Utf32BE => utf32_be::encode_from_str(input, output),
+        Encoding::Utf32LE => utf32_le::encode_from_str(input, output),
         Encoding::Big5WHATWG => big5_whatwg::encode_from_str(input, output, is_end),
         Encoding::ShiftJISWHATWG => shiftjis_whatwg::encode_from_str(input, output, is_end),
         Encoding::Ascii => ascii::encode_from_str(input, output, is_end),

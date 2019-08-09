@@ -3,13 +3,7 @@
 use core;
 use {DecodeError, DecodeResult, EncodeResult};
 
-pub fn encode_from_str<'a>(
-    input: &str,
-    out_buffer: &'a mut [u8],
-    is_end: bool,
-) -> EncodeResult<'a> {
-    let _ = is_end; // Unused for encoding to utf16, so silence warning.
-
+pub fn encode_from_str<'a>(input: &str, out_buffer: &'a mut [u8]) -> EncodeResult<'a> {
     // Do the encode.
     let mut input_i = 0;
     let mut output_i = 0;
@@ -145,7 +139,7 @@ mod tests {
     fn encode_01() {
         let text = "こんにちは！";
         let mut buf = [0u8; 1];
-        let (encoded, consumed_count) = encode_from_str(text, &mut buf, true).unwrap();
+        let (encoded, consumed_count) = encode_from_str(text, &mut buf).unwrap();
         assert_eq!(consumed_count, 0);
         assert_eq!(encoded, &[]);
     }
@@ -154,7 +148,7 @@ mod tests {
     fn encode_02() {
         let text = "こんにちは！";
         let mut buf = [0u8; 2];
-        let (encoded, consumed_count) = encode_from_str(text, &mut buf, true).unwrap();
+        let (encoded, consumed_count) = encode_from_str(text, &mut buf).unwrap();
         assert_eq!(consumed_count, 3);
         assert_eq!(encoded, &[0x30, 0x53]);
     }
@@ -163,7 +157,7 @@ mod tests {
     fn encode_03() {
         let text = "こんにちは！";
         let mut buf = [0u8; 3];
-        let (encoded, consumed_count) = encode_from_str(text, &mut buf, true).unwrap();
+        let (encoded, consumed_count) = encode_from_str(text, &mut buf).unwrap();
         assert_eq!(consumed_count, 3);
         assert_eq!(encoded, &[0x30, 0x53]);
     }
@@ -172,7 +166,7 @@ mod tests {
     fn encode_04() {
         let text = "😺😼";
         let mut buf = [0u8; 3];
-        let (encoded, consumed_count) = encode_from_str(text, &mut buf, true).unwrap();
+        let (encoded, consumed_count) = encode_from_str(text, &mut buf).unwrap();
         assert_eq!(consumed_count, 0);
         assert_eq!(encoded, &[]);
     }
@@ -181,7 +175,7 @@ mod tests {
     fn encode_05() {
         let text = "😺😼";
         let mut buf = [0u8; 4];
-        let (encoded, consumed_count) = encode_from_str(text, &mut buf, true).unwrap();
+        let (encoded, consumed_count) = encode_from_str(text, &mut buf).unwrap();
         assert_eq!(consumed_count, 4);
         assert_eq!(encoded, &[0xD8, 0x3D, 0xDE, 0x3A]);
     }
@@ -190,7 +184,7 @@ mod tests {
     fn encode_06() {
         let text = "😺😼";
         let mut buf = [0u8; 7];
-        let (encoded, consumed_count) = encode_from_str(text, &mut buf, true).unwrap();
+        let (encoded, consumed_count) = encode_from_str(text, &mut buf).unwrap();
         assert_eq!(consumed_count, 4);
         assert_eq!(encoded, &[0xD8, 0x3D, 0xDE, 0x3A]);
     }
