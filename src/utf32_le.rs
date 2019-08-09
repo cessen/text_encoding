@@ -38,8 +38,7 @@ pub fn decode_to_str<'a>(input: &[u8], out_buffer: &'a mut [u8], is_end: bool) -
     let mut output_i = 0;
 
     // Loop through the input, getting 4 bytes at a time.
-    let mut itr = input.chunks(4);
-    while let Some(bytes) = itr.next() {
+    for bytes in input.chunks(4) {
         if bytes.len() < 4 {
             if !is_end {
                 break;

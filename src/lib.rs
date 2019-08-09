@@ -1,4 +1,5 @@
 #![no_std]
+#![allow(clippy::cast_lossless)]
 
 //! A library for encoding/decoding between `&str`'s and other text encodings.
 //!

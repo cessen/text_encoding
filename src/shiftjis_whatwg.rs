@@ -34,43 +34,41 @@ pub fn encode_from_str<'a>(input: &str, out_buffer: &'a mut [u8]) -> EncodeResul
             out_buffer[output_i] = (code - 0xFF61 + 0xA1) as u8;
             output_i += 1;
             input_i = offset + 1;
-        } else {
-            if (output_i + 1) < out_buffer.len() {
-                let jis_bytes = if code >= 0xE000 && code <= 0xE757 {
-                    // Special case 5
-                    // Note: the WHATWG spec doesn't specify this, but it does it
-                    // in reverse during decoding, and these simply don't map
-                    // otherwise.  So we're just making it map back properly.
-                    let jis_ptr = code - 0xE000 + 8836;
-                    let lead = jis_ptr / 188;
-                    let lead_offset = if lead < 0x1F { 0x81 } else { 0xC1 };
-                    let trail = jis_ptr % 188;
-                    let trail_offset = if trail < 0x3F { 0x40 } else { 0x41 };
-                    [(lead + lead_offset) as u8, (trail + trail_offset) as u8]
-                } else {
-                    if code == 0x2212 {
-                        // Special case 4
-                        code = 0xFF0D;
-                    }
-                    let code = core::char::from_u32(code).unwrap();
-                    if let Ok(ptr_i) = ENCODE_TABLE.binary_search_by_key(&code, |x| x.0) {
-                        ENCODE_TABLE[ptr_i].1
-                    } else {
-                        return Err(EncodeError {
-                            character: c,
-                            error_range: (offset, offset + c.len_utf8()),
-                            output_bytes_written: output_i,
-                        });
-                    }
-                };
-
-                out_buffer[output_i] = jis_bytes[0];
-                out_buffer[output_i + 1] = jis_bytes[1];
-                output_i += 2;
-                input_i = offset + 1;
+        } else if (output_i + 1) < out_buffer.len() {
+            let jis_bytes = if code >= 0xE000 && code <= 0xE757 {
+                // Special case 5
+                // Note: the WHATWG spec doesn't specify this, but it does it
+                // in reverse during decoding, and these simply don't map
+                // otherwise.  So we're just making it map back properly.
+                let jis_ptr = code - 0xE000 + 8836;
+                let lead = jis_ptr / 188;
+                let lead_offset = if lead < 0x1F { 0x81 } else { 0xC1 };
+                let trail = jis_ptr % 188;
+                let trail_offset = if trail < 0x3F { 0x40 } else { 0x41 };
+                [(lead + lead_offset) as u8, (trail + trail_offset) as u8]
             } else {
-                break;
-            }
+                if code == 0x2212 {
+                    // Special case 4
+                    code = 0xFF0D;
+                }
+                let code = core::char::from_u32(code).unwrap();
+                if let Ok(ptr_i) = ENCODE_TABLE.binary_search_by_key(&code, |x| x.0) {
+                    ENCODE_TABLE[ptr_i].1
+                } else {
+                    return Err(EncodeError {
+                        character: c,
+                        error_range: (offset, offset + c.len_utf8()),
+                        output_bytes_written: output_i,
+                    });
+                }
+            };
+
+            out_buffer[output_i] = jis_bytes[0];
+            out_buffer[output_i + 1] = jis_bytes[1];
+            output_i += 2;
+            input_i = offset + 1;
+        } else {
+            break;
         }
     }
 

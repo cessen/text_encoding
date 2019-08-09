@@ -30,15 +30,16 @@ pub fn decode_to_str<'a>(input: &[u8], out_buffer: &'a mut [u8], is_end: bool) -
         let trailing_bytes = input.len() - valid_up_to;
         let byte = input[valid_up_to];
         // First we check if we're truncated.  If not, then it's an error.
-        let is_truncated = ((byte & 0b11100000) == 0b11000000 && trailing_bytes < 2)
-            || ((byte & 0b11110000) == 0b11100000 && trailing_bytes < 3)
-            || ((byte & 0b11111000) == 0b11110000 && trailing_bytes < 4);
+        let is_truncated = ((byte & 0b1110_0000) == 0b1100_0000 && trailing_bytes < 2)
+            || ((byte & 0b1111_0000) == 0b1110_0000 && trailing_bytes < 3)
+            || ((byte & 0b1111_1000) == 0b1111_0000 && trailing_bytes < 4);
         if !is_truncated {
             // Find the byte range of the error by finding the next valid
             // starting byte (or reaching end of input).
             let mut i = valid_up_to + 1;
             while i < input.len()
-                && ((input[i] & 0b11000000) == 0b10000000 || (input[i] & 0b11111000) == 0b11111000)
+                && ((input[i] & 0b1100_0000) == 0b1000_0000
+                    || (input[i] & 0b1111_1000) == 0b1111_1000)
             {
                 i += 1;
             }
@@ -76,7 +77,7 @@ fn copy_len(input: &[u8], output_len: usize) -> usize {
         input.len()
     } else {
         let mut i = output_len;
-        while i > 0 && (input[i] & 0b11000000) == 0b10000000 {
+        while i > 0 && (input[i] & 0b1100_0000) == 0b1000_0000 {
             i -= 1;
         }
         i

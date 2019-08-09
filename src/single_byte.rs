@@ -283,18 +283,16 @@ fn ascii_ext_encode_from_str<'a>(
             output[output_i] = c as u8;
             output_i += 1;
             input_i = offset + 1;
+        } else if let Ok(i) = table.binary_search_by_key(&c, |x| x.0) {
+            output[output_i] = table[i].1;
+            output_i += 1;
+            input_i = offset + 1;
         } else {
-            if let Ok(i) = table.binary_search_by_key(&c, |x| x.0) {
-                output[output_i] = table[i].1;
-                output_i += 1;
-                input_i = offset + 1;
-            } else {
-                return Err(EncodeError {
-                    character: c,
-                    error_range: (offset, offset + c.len_utf8()),
-                    output_bytes_written: output_i,
-                });
-            }
+            return Err(EncodeError {
+                character: c,
+                error_range: (offset, offset + c.len_utf8()),
+                output_bytes_written: output_i,
+            });
         }
     }
 
