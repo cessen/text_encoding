@@ -3,7 +3,7 @@
 //! So far all of these are Ascii and extensions of Ascii.
 
 use core;
-use {DecodeError, DecodeResult, EncodeError, EncodeResult};
+use {DecodeError, DecodeErrorCause, DecodeResult, EncodeError, EncodeResult};
 
 pub mod ascii {
     //! US ASCII.
@@ -333,6 +333,7 @@ fn ascii_ext_decode_to_str<'a>(
             if code == '�' {
                 // Error: undefined byte.
                 return Err(DecodeError {
+                    cause: DecodeErrorCause::InvalidData,
                     error_range: (input_i, input_i + 1),
                     output_bytes_written: output_i,
                 });
@@ -559,6 +560,7 @@ mod tests {
         assert_eq!(
             error,
             Err(DecodeError {
+                cause: DecodeErrorCause::InvalidData,
                 error_range: (1, 2),
                 output_bytes_written: 1,
             })
@@ -575,6 +577,7 @@ mod tests {
         assert_eq!(
             error,
             Err(DecodeError {
+                cause: DecodeErrorCause::InvalidData,
                 error_range: (1, 2),
                 output_bytes_written: 1,
             })
@@ -591,6 +594,7 @@ mod tests {
         assert_eq!(
             error,
             Err(DecodeError {
+                cause: DecodeErrorCause::InvalidData,
                 error_range: (1, 2),
                 output_bytes_written: 1,
             })
@@ -635,6 +639,7 @@ mod tests {
         assert_eq!(
             error,
             Err(DecodeError {
+                cause: DecodeErrorCause::InvalidData,
                 error_range: (1, 2),
                 output_bytes_written: 1,
             })
@@ -651,6 +656,7 @@ mod tests {
         assert_eq!(
             error,
             Err(DecodeError {
+                cause: DecodeErrorCause::InvalidData,
                 error_range: (1, 2),
                 output_bytes_written: 1,
             })

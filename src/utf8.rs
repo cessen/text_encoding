@@ -6,7 +6,7 @@
 //! API for all encodings.
 
 use core;
-use {DecodeError, DecodeResult, EncodeResult};
+use {DecodeError, DecodeErrorCause, DecodeResult, EncodeResult};
 
 pub fn encode_from_str<'a>(input: &str, out_buffer: &'a mut [u8]) -> EncodeResult<'a> {
     let cl = copy_len(input.as_bytes(), out_buffer.len());
@@ -45,12 +45,14 @@ pub fn decode_to_str<'a>(input: &[u8], out_buffer: &'a mut [u8], is_end: bool) -
             }
             // Return the error.
             return Err(DecodeError {
+                cause: DecodeErrorCause::InvalidData,
                 error_range: (valid_up_to, i),
                 output_bytes_written: bytes_copied,
             });
         } else if is_end {
             // If we're truncated _and_ at end-of-input, that's also an error.
             return Err(DecodeError {
+                cause: DecodeErrorCause::InvalidData,
                 error_range: (valid_up_to, input.len()),
                 output_bytes_written: bytes_copied,
             });
@@ -186,6 +188,7 @@ mod tests {
         assert_eq!(
             error,
             Err(DecodeError {
+                cause: DecodeErrorCause::InvalidData,
                 error_range: (0, 3),
                 output_bytes_written: 0,
             })
@@ -203,6 +206,7 @@ mod tests {
         assert_eq!(
             error,
             Err(DecodeError {
+                cause: DecodeErrorCause::InvalidData,
                 error_range: (0, 2),
                 output_bytes_written: 0,
             })
@@ -220,6 +224,7 @@ mod tests {
         assert_eq!(
             error,
             Err(DecodeError {
+                cause: DecodeErrorCause::InvalidData,
                 error_range: (3, 6),
                 output_bytes_written: 3,
             })
@@ -237,6 +242,7 @@ mod tests {
         assert_eq!(
             error,
             Err(DecodeError {
+                cause: DecodeErrorCause::InvalidData,
                 error_range: (3, 12),
                 output_bytes_written: 3,
             })
@@ -254,6 +260,7 @@ mod tests {
         assert_eq!(
             error,
             Err(DecodeError {
+                cause: DecodeErrorCause::InvalidData,
                 error_range: (3, 8),
                 output_bytes_written: 3,
             })
@@ -271,6 +278,7 @@ mod tests {
         assert_eq!(
             error,
             Err(DecodeError {
+                cause: DecodeErrorCause::InvalidData,
                 error_range: (3, 6),
                 output_bytes_written: 3,
             })
@@ -288,6 +296,7 @@ mod tests {
         assert_eq!(
             error,
             Err(DecodeError {
+                cause: DecodeErrorCause::InvalidData,
                 error_range: (3, 6),
                 output_bytes_written: 3,
             })
@@ -305,6 +314,7 @@ mod tests {
         assert_eq!(
             error,
             Err(DecodeError {
+                cause: DecodeErrorCause::InvalidData,
                 error_range: (3, 7),
                 output_bytes_written: 3,
             })
@@ -322,6 +332,7 @@ mod tests {
         assert_eq!(
             error,
             Err(DecodeError {
+                cause: DecodeErrorCause::InvalidData,
                 error_range: (3, 5),
                 output_bytes_written: 3,
             })
@@ -339,6 +350,7 @@ mod tests {
         assert_eq!(
             error,
             Err(DecodeError {
+                cause: DecodeErrorCause::InvalidData,
                 error_range: (3, 5),
                 output_bytes_written: 3,
             })
@@ -356,6 +368,7 @@ mod tests {
         assert_eq!(
             error,
             Err(DecodeError {
+                cause: DecodeErrorCause::InvalidData,
                 error_range: (15, 17),
                 output_bytes_written: 15,
             })
@@ -373,6 +386,7 @@ mod tests {
         assert_eq!(
             error,
             Err(DecodeError {
+                cause: DecodeErrorCause::InvalidData,
                 error_range: (15, 16),
                 output_bytes_written: 15,
             })

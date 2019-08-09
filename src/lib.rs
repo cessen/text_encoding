@@ -12,15 +12,15 @@
 //!
 //! These functions behave identically across all modules, and are therefore
 //! undocumented in the individual modules.  Instead, see the documentation
-//! below for how to use them.
+//! here for how to use them.
 //!
 //!
-//! # Str -> Text Encoding
+//! # `encode_from_str()`
 //!
 //! Basic usage of a module's `encode_from_str()` function looks like this:
 //!
 //! ```
-//! # use text_encoding::utf8::encode_from_str;
+//! # use text_encoding::single_byte::ascii::encode_from_str;
 //! let text = "Hi, I'm some string.";
 //! let mut out_buffer = [0u8; 100];
 //! let (encoded_text, _) = encode_from_str(text, &mut out_buffer).unwrap();
@@ -33,11 +33,10 @@
 //! input text _and_ a buffer to write the encoded text to.  It then returns a
 //! slice to just the part of the buffer containing the encoded text.
 //!
-//! ## Error Handling
+//! This example is simplified, however, and ignores some important things
+//! that you will want to handle in real code.  For example, error handling.
 //!
-//! The above example is over-simplified, however.  It ignores some really
-//! important things that you will want to handle in real code.  For example,
-//! error handling.
+//! ## Error Handling
 //!
 //! Error handling is both flexible and relatively straightforward.  Because
 //! the `str` type in Rust is guaranteed to always be valid utf8, the only
@@ -131,9 +130,94 @@
 //! friendlier APIs.
 //!
 //!
-//! # Text Encoding -> Str
+//! # `decode_to_str()`
 //!
-//! TODO: explain how to use `decode_to_str()`.
+//! The APIs for decoding are nearly identical in usage and behavior to
+//! the APIs for encoding explained above.  A simple example:
+//!
+//! ```
+//! # use text_encoding::single_byte::ascii::decode_to_str;
+//! let bytes = "Some bytes of text data.".as_bytes();
+//! let mut out_buffer = [0u8; 100];
+//! let (decoded_text, _) = decode_to_str(bytes, &mut out_buffer).unwrap();
+//! ```
+//!
+//! The main difference is that instead of passing in a `str` as input you
+//! pass in a byte slice, and instead of the function returning a byte slice
+//! it returns a `str`.  This makes sense, since the encode/decode functions
+//! are inverse operations of each other.  But they otherwise operate
+//! identically, including how they deal with stateful and streaming
+//! encoding/decoding.
+//!
+//! It is worth noting that all of the decoders handle chunks correctly
+//! _even when those chunks are split at otherwise invalid byte locations_.
+//! For example, splitting utf16 text data in the middle of a code point is
+//! perfectly valid and handled correctly when feeding chunks to the decoder.
+//!
+//! This robustness is important because otherwise client code would need to
+//! know what a valid "split" is for every encoding used, which would push a
+//! lot of encoding-specific logic into client code.  And that would somewhat
+//! diminish the purpose of having a library like this in the first place.
+//!
+//! In a nutshell: you can blissfully throw bytes at the decoders however is
+//! most convenient.
+//!
+//! ## Error Handling
+//!
+//! Error handling for decoding has the same general mechanics as the error
+//! handling for encoding, but with more potential causes of errors.
+//!
+//! Unlike encoding, where the input text data is guaranteed to be valid,
+//! decoding takes an arbitrary byte slice, which has no guarantees of being
+//! valid text in the given encoding.  Therefore, a common cause of errors
+//! when decoding is encountering invalid text data.
+//!
+//! It is tempting to think that--if valid--all input text data can be
+//! unambiguously represented in utf8.  However, despite Unicode's lofty
+//! goals of being able to represent all of the world's text, that is not
+//! always the case.  The specifics of this are complex (see the "round-trip
+//! conversion" section below), but it basically means there are two broad
+//! causes of decode errors:
+//!
+//! - Invalid text data.
+//! - Valid text data, but which we don't know how best to convert to Unicode.
+//!
+//! The `DecodeError` type therefore contains a `cause` field with an enum
+//! indicating which of the two issues was encountered.
+//!
+//!
+//! # Round-trip Conversions
+//!
+//! Round trip conversions between `str` and the various text encodings
+//! are unfortunately not guaranteed to be lossless, even when no errors are
+//! returned.
+//!
+//! A trivial case where it is obvious that lossy conversion has to take place
+//! is converting from utf8 to Ascii and back.  Ascii only has 128
+//! representable characters, whereas utf8 has well over 100,000.  To always
+//! successfully convert between the two, some kind of lossy conversion has to
+//! take place.  In this particular case, of course, the encoding API returns
+//! an error if there is an unrepresentable character, so that the client
+//! code can handle it however it sees fit.  However, this is not a reasonable
+//! strategy in all cases.
+//!
+//! A good example is the ISO/IEC 2022 encoding, which can represent both
+//! Chinese characters and Japanese kanji characters as distinct from each
+//! other.  Unicode, however, represents Chinese and Japanese characters using
+//! the same code points, not making any distinction between the two.  Thus,
+//! converting between ISO/IEC 2022 and Unicode is necessarily lossy.  But
+//! unlike with Ascii, if we returned an error for every ambiguous case,
+//! almost every single character would be an error in typical use-cases for
+//! for the encoding.  That would mean that client code would essentially
+//! always need to manually encode/decode on its own in every case, at which
+//! point this library wouldn't really be doing anything, and the client code
+//! might as well write their own encode/decode functions instead.  Therefore,
+//! in the case of ISO/IEC 2022, automatically doing a lossy conversion is
+//! the more reasonable approach.
+//!
+//! If an encoding in this crate does silent lossy conversions, it will always
+//! be documented in its module.  Otherwise you can depend on the conversion
+//! functions either being lossless or returning an error.
 
 pub mod big5_whatwg;
 pub mod shiftjis_whatwg;
@@ -186,6 +270,16 @@ pub struct EncodeError {
 /// already been encoded and written to the output buffer.
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct DecodeError {
+    pub cause: DecodeErrorCause,
     pub error_range: (usize, usize),
     pub output_bytes_written: usize,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum DecodeErrorCause {
+    /// Invalid text data was encountered.
+    InvalidData,
+
+    /// Valid text data for which a reasonable Unicode conversion is unknown.
+    UnknownConversion,
 }

@@ -1,7 +1,7 @@
 //! Little-endian UTF-32.
 
 use core;
-use {DecodeError, DecodeResult, EncodeResult};
+use {DecodeError, DecodeErrorCause, DecodeResult, EncodeResult};
 
 pub fn encode_from_str<'a>(input: &str, out_buffer: &'a mut [u8]) -> EncodeResult<'a> {
     // Do the encode.
@@ -45,6 +45,7 @@ pub fn decode_to_str<'a>(input: &[u8], out_buffer: &'a mut [u8], is_end: bool) -
             } else {
                 // Error: incomplete data at end-of-input.
                 return Err(DecodeError {
+                    cause: DecodeErrorCause::InvalidData,
                     error_range: (input_i, input.len()),
                     output_bytes_written: output_i,
                 });
@@ -69,6 +70,7 @@ pub fn decode_to_str<'a>(input: &[u8], out_buffer: &'a mut [u8], is_end: bool) -
         } else {
             // Error: invalid codepoint.
             return Err(DecodeError {
+                cause: DecodeErrorCause::InvalidData,
                 error_range: (input_i, input_i + 4),
                 output_bytes_written: output_i,
             });
@@ -239,6 +241,7 @@ mod tests {
         assert_eq!(
             decode_to_str(&data, &mut buf, true),
             Err(DecodeError {
+                cause: DecodeErrorCause::InvalidData,
                 error_range: (0, 4),
                 output_bytes_written: 0,
             })
@@ -255,6 +258,7 @@ mod tests {
         assert_eq!(
             decode_to_str(&data, &mut buf, true),
             Err(DecodeError {
+                cause: DecodeErrorCause::InvalidData,
                 error_range: (0, 4),
                 output_bytes_written: 0,
             })
@@ -271,6 +275,7 @@ mod tests {
         assert_eq!(
             decode_to_str(&data, &mut buf, true),
             Err(DecodeError {
+                cause: DecodeErrorCause::InvalidData,
                 error_range: (0, 4),
                 output_bytes_written: 0,
             })
@@ -287,6 +292,7 @@ mod tests {
         assert_eq!(
             decode_to_str(&data, &mut buf, true),
             Err(DecodeError {
+                cause: DecodeErrorCause::InvalidData,
                 error_range: (4, 8),
                 output_bytes_written: 3,
             })
@@ -304,6 +310,7 @@ mod tests {
         assert_eq!(
             decode_to_str(&data, &mut buf, true),
             Err(DecodeError {
+                cause: DecodeErrorCause::InvalidData,
                 error_range: (4, 8),
                 output_bytes_written: 3,
             })
@@ -321,6 +328,7 @@ mod tests {
         assert_eq!(
             decode_to_str(&data, &mut buf, true),
             Err(DecodeError {
+                cause: DecodeErrorCause::InvalidData,
                 error_range: (4, 8),
                 output_bytes_written: 3,
             })
@@ -335,6 +343,7 @@ mod tests {
         assert_eq!(
             decode_to_str(&data, &mut buf, true),
             Err(DecodeError {
+                cause: DecodeErrorCause::InvalidData,
                 error_range: (4, 7),
                 output_bytes_written: 4,
             })
@@ -349,6 +358,7 @@ mod tests {
         assert_eq!(
             decode_to_str(&data, &mut buf, true),
             Err(DecodeError {
+                cause: DecodeErrorCause::InvalidData,
                 error_range: (4, 6),
                 output_bytes_written: 4,
             })
@@ -363,6 +373,7 @@ mod tests {
         assert_eq!(
             decode_to_str(&data, &mut buf, true),
             Err(DecodeError {
+                cause: DecodeErrorCause::InvalidData,
                 error_range: (4, 5),
                 output_bytes_written: 4,
             })
