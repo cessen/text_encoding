@@ -17,7 +17,6 @@ fn shiftjis_whatwg_encode() {
     let (shiftjis, _) = encode_from_str(
         std::str::from_utf8(WHATWG_ENCODE_UTF8_DATA).unwrap(),
         &mut buf,
-        true,
     )
     .unwrap();
 

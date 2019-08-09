@@ -11,8 +11,6 @@ pub fn encode_from_str<'a>(
     out_buffer: &'a mut [u8],
     is_end: bool,
 ) -> EncodeResult<'a> {
-    let _ = is_end; // Unused for encoding to big5, so silence warning.
-
     // Do the encode.
     let mut input_i = 0;
     let mut output_i = 0;

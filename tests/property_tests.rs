@@ -433,7 +433,6 @@ proptest! {
         // Attempt to encode, but probably fail.  The important thing is that
         // it should never panic, only return errors.
         let mut buf = vec![0u8; 4096];
-        let _ = shiftjis_whatwg::encode_from_str(text, &mut buf, false);
-        let _ = shiftjis_whatwg::encode_from_str(text, &mut buf, true);
+        let _ = shiftjis_whatwg::encode_from_str(text, &mut buf);
     }
 }

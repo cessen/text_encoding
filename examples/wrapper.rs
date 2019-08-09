@@ -75,7 +75,7 @@ pub fn encode_from_str<'a>(
         Encoding::Utf32BE => utf32_be::encode_from_str(input, output),
         Encoding::Utf32LE => utf32_le::encode_from_str(input, output),
         Encoding::Big5WHATWG => big5_whatwg::encode_from_str(input, output, is_end),
-        Encoding::ShiftJISWHATWG => shiftjis_whatwg::encode_from_str(input, output, is_end),
+        Encoding::ShiftJISWHATWG => shiftjis_whatwg::encode_from_str(input, output),
         Encoding::Ascii => ascii::encode_from_str(input, output),
         Encoding::Ibm866 => ibm_866::encode_from_str(input, output),
         Encoding::Iso8859_1 => iso_8859_1::encode_from_str(input, output),
