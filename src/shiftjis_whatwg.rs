@@ -1,5 +1,9 @@
 //! The WHATWG variant of Shift JIS.
-
+//!
+//! There is a one-to-many mapping between Unicode and WHATWG Shift JIS.
+//! Therefore, decoding from WHATWG Shift JIS to `str` is lossy, because it
+//! throws away distinctions made in WHATWG Shift JIS that don't exist in
+//! Unicode.  Encoding from `str` to WHATWG Shift JIS, however, is lossless.
 use core;
 use {DecodeError, DecodeErrorCause, DecodeResult, EncodeError, EncodeResult};
 
@@ -84,6 +88,7 @@ pub fn encode_from_str<'a>(input: &str, out_buffer: &'a mut [u8]) -> EncodeResul
     Ok((&out_buffer[..output_i], input_i))
 }
 
+/// Note: is potentially lossy.
 pub fn decode_to_str<'a>(input: &[u8], out_buffer: &'a mut [u8], is_end: bool) -> DecodeResult<'a> {
     let mut input_i = 0;
     let mut output_i = 0;

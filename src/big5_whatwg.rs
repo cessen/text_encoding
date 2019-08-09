@@ -1,4 +1,10 @@
 //! The WHATWG variant of BIG5.
+//!
+//! There is a one-to-many mapping between Unicode and WHATWG
+//! BIG5.  Therefore, decoding from WHATWG BIG5 to `str` is
+//! lossy, because it throws away distinctions made in WHATWG
+//! BIG5 that don't exist in Unicode.  Encoding from `str` to
+//! WHATWG BIG5, however, is lossless.
 
 use core;
 use {DecodeError, DecodeErrorCause, DecodeResult, EncodeError, EncodeResult};
@@ -83,6 +89,7 @@ fn map_grapheme(a: u32, b: u32) -> Option<[u8; 2]> {
     }
 }
 
+/// Note: is potentially lossy.
 pub fn decode_to_str<'a>(input: &[u8], out_buffer: &'a mut [u8], is_end: bool) -> DecodeResult<'a> {
     let mut input_i = 0;
     let mut output_i = 0;
