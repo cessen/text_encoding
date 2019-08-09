@@ -260,7 +260,7 @@ proptest! {
         // Decode from ascii to utf8
         let mut tmp = &data[..];
         while !tmp.is_empty() {
-            if let Ok((decoded, n)) = ascii::decode_to_str(tmp, &mut buf, true) {
+            if let Ok((decoded, n)) = ascii::decode_to_str(tmp, &mut buf) {
                 tmp = &tmp[n..];
                 utf8.extend(decoded.chars());
             } else {
@@ -271,7 +271,7 @@ proptest! {
         // Encode to from utf8 back to ascii
         let mut tmp = &utf8[..];
         while !tmp.is_empty() {
-            if let Ok((encoded, n)) = ascii::encode_from_str(tmp, &mut buf, true) {
+            if let Ok((encoded, n)) = ascii::encode_from_str(tmp, &mut buf) {
                 tmp = &tmp[n..];
                 ascii.extend_from_slice(encoded);
             } else {
@@ -287,8 +287,7 @@ proptest! {
         // Attempt to decode, but probably fail.  The important thing is that
         // it should never panic, only return errors.
         let mut buf = vec![0u8; 4096];
-        let _ = ascii::decode_to_str(data, &mut buf, false);
-        let _ = ascii::decode_to_str(data, &mut buf, true);
+        let _ = ascii::decode_to_str(data, &mut buf);
     }
 
     #[test]
@@ -296,8 +295,7 @@ proptest! {
         // Attempt to encode, but probably fail.  The important thing is that
         // it should never panic, only return errors.
         let mut buf = vec![0u8; 4096];
-        let _ = ascii::encode_from_str(text, &mut buf, false);
-        let _ = ascii::encode_from_str(text, &mut buf, true);
+        let _ = ascii::encode_from_str(text, &mut buf);
     }
 
     #[test]
@@ -309,7 +307,7 @@ proptest! {
         // Decode from latin1 to utf8
         let mut tmp = &data[..];
         while !tmp.is_empty() {
-            if let Ok((decoded, n)) = iso_8859_1::decode_to_str(tmp, &mut buf, true) {
+            if let Ok((decoded, n)) = iso_8859_1::decode_to_str(tmp, &mut buf) {
                 tmp = &tmp[n..];
                 utf8.extend(decoded.chars());
             } else {
@@ -320,7 +318,7 @@ proptest! {
         // Encode to from utf8 back to latin1
         let mut tmp = &utf8[..];
         while !tmp.is_empty() {
-            if let Ok((encoded, n)) = iso_8859_1::encode_from_str(tmp, &mut buf, true) {
+            if let Ok((encoded, n)) = iso_8859_1::encode_from_str(tmp, &mut buf) {
                 tmp = &tmp[n..];
                 latin1.extend_from_slice(encoded);
             } else {
@@ -336,8 +334,7 @@ proptest! {
         // Attempt to decode.  Should always succeed with latin1, but the
         // important thing here is that it doesn't panic.
         let mut buf = vec![0u8; 4096];
-        let _ = iso_8859_1::decode_to_str(data, &mut buf, false);
-        let _ = iso_8859_1::decode_to_str(data, &mut buf, true);
+        let _ = iso_8859_1::decode_to_str(data, &mut buf);
     }
 
     #[test]
@@ -345,8 +342,7 @@ proptest! {
         // Attempt to encode, but probably fail.  The important thing is that
         // it should never panic, only return errors.
         let mut buf = vec![0u8; 4096];
-        let _ = iso_8859_1::encode_from_str(text, &mut buf, false);
-        let _ = iso_8859_1::encode_from_str(text, &mut buf, true);
+        let _ = iso_8859_1::encode_from_str(text, &mut buf);
     }
 
     // The iso-8859-7 tests are representative of all single-byte encodings
@@ -367,7 +363,7 @@ proptest! {
         // Decode from iso-8859-7 to utf8
         let mut tmp = &data[..];
         while !tmp.is_empty() {
-            if let Ok((decoded, n)) = iso_8859_7::decode_to_str(tmp, &mut buf, true) {
+            if let Ok((decoded, n)) = iso_8859_7::decode_to_str(tmp, &mut buf) {
                 tmp = &tmp[n..];
                 utf8.extend(decoded.chars());
             } else {
@@ -378,7 +374,7 @@ proptest! {
         // Encode to from utf8 back to iso-8859-7
         let mut tmp = &utf8[..];
         while !tmp.is_empty() {
-            if let Ok((encoded, n)) = iso_8859_7::encode_from_str(tmp, &mut buf, true) {
+            if let Ok((encoded, n)) = iso_8859_7::encode_from_str(tmp, &mut buf) {
                 tmp = &tmp[n..];
                 iso8859_7.extend_from_slice(encoded);
             } else {
@@ -394,8 +390,7 @@ proptest! {
         // Attempt to decode, but probably fail.  The important thing is that
         // it should never panic, only return errors.
         let mut buf = vec![0u8; 4096];
-        let _ = iso_8859_7::decode_to_str(data, &mut buf, false);
-        let _ = iso_8859_7::decode_to_str(data, &mut buf, true);
+        let _ = iso_8859_7::decode_to_str(data, &mut buf);
     }
 
     #[test]
@@ -403,8 +398,7 @@ proptest! {
         // Attempt to encode, but probably fail.  The important thing is that
         // it should never panic, only return errors.
         let mut buf = vec![0u8; 4096];
-        let _ = iso_8859_7::encode_from_str(text, &mut buf, false);
-        let _ = iso_8859_7::encode_from_str(text, &mut buf, true);
+        let _ = iso_8859_7::encode_from_str(text, &mut buf);
     }
 
     #[test]

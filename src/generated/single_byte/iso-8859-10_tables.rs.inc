@@ -6,17 +6,15 @@ use {DecodeResult, EncodeResult};
 pub fn decode_to_str<'a>(
     input: &[u8],
     out_buffer: &'a mut [u8],
-    is_end: bool
 ) -> DecodeResult<'a> {
-    super::ascii_ext_decode_to_str(&DECODE_TABLE, input, out_buffer, is_end)
+    super::ascii_ext_decode_to_str(&DECODE_TABLE, input, out_buffer)
 }
 
 pub fn encode_from_str<'a>(
     input: &str,
     out_buffer: &'a mut [u8],
-    is_end: bool
 ) -> EncodeResult<'a> {
-    super::ascii_ext_encode_from_str(&ENCODE_TABLE, input, out_buffer, is_end)
+    super::ascii_ext_encode_from_str(&ENCODE_TABLE, input, out_buffer)
 }
 
 const DECODE_TABLE: [char; 128] = [
