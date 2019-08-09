@@ -9,7 +9,7 @@ pub fn encode_from_str<'a>(input: &str, out_buffer: &'a mut [u8]) -> EncodeResul
     let mut output_i = 0;
     for (offset, c) in input.char_indices() {
         if (output_i + 3) < out_buffer.len() {
-            let mut code = (c as u32).to_le_bytes();
+            let code = (c as u32).to_le_bytes();
             out_buffer[output_i] = code[0];
             out_buffer[output_i + 1] = code[1];
             out_buffer[output_i + 2] = code[2];

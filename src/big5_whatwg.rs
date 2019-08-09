@@ -16,7 +16,7 @@ pub fn encode_from_str<'a>(
     let mut output_i = 0;
     let mut itr = input.char_indices();
     while let Some((offset, c)) = itr.next() {
-        let mut code = c as u32;
+        let code = c as u32;
         if output_i >= out_buffer.len() {
             break;
         } else if code <= 127 {
